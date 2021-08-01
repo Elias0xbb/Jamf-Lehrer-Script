@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "async": "^3.2.0",
-    "request": "^2.88.2"
-  }
-}
