@@ -1,0 +1,3 @@
+const AUTH = 'NzA5ODQ3OTY6Wjg4MTZWTEI2MzVCMzRDNzhIVVM2UzJLMUNISjY3RFo=';
+
+module.exports = AUTH;
