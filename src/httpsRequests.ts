@@ -49,4 +49,4 @@ function sendRequest(path: string, method: string, params: object) {
 }
 
 
-exports.sendRequest = sendRequest;
+export { sendRequest }
