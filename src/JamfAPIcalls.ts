@@ -47,6 +47,26 @@ async function getClass(uuid: string) {
 	process.exit(1)
 }
 
+async function deleteClass(uuid: string){
+	for(let i = 0; i < 5; i++){
+		try{
+			if(!uuid || uuid == "")throw new Error("empty uuid :(");
+			const response = await sendRequest(`/classes/${uuid}`, "DELETE", null)
+			return response;
+		}
+		catch(e){ var err = e}
+	}
+	// Crash after five errors
+	console.log(`Failed to delete Class ${uuid}\nError = ${err}`);
+	process.exit(1)
+}
+
+(async () => {
+	const res = await deleteClass("31bef6a4-e393-421a-af1f-f0585ea06a84");
+	console.log(res);
+
+})()
+
 /*-< getMembersOf(groupID) >---------------------------------------------+
 | Requests and returns all users of the specified group.                 |
 | If no group is specified, a list of all global users will be returned. |
