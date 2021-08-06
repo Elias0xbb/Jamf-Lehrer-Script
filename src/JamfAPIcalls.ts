@@ -13,7 +13,7 @@ async function getAllClasses() {
 			let clss = <{classes: any}> await sendRequest('/classes', 'GET', null);
 
 			// If the returned value or its 'classes' property is not defined, throw an error
-			if(!clss) throw new Error("Undefined response");
+			if(!clss) throw new Error(`Undefined response [Function call: getAllClasses()].`);
 			if(!clss.classes) throw new Error("Classes Property undefined");
 			// Return classes if the request was successful
 			return clss.classes;
@@ -26,17 +26,17 @@ async function getAllClasses() {
 	process.exit(1)
 }
 
-/*-< getClass(uuid) >------------------------------------------------------------------------+
-| Requests and returns the class specified by the uuid.                                      |
-| Crashs after five unsuccessful tries but ignores "ClassNotFound" error (returns undefined) |
-+-------------------------------------------------------------------------------------------*/
+/*-< getClass(uuid) >-------------------------------------------------------------------------+
+| Requests and returns the class specified by the uuid.                                       |
+| Crashs after five unsuccessful tries but ignores "ClassNotFound" error (returns undefined). |
++--------------------------------------------------------------------------------------------*/
 async function getClass(uuid: string) {
 	for(let i = 0; i < 5; ++i) {
 		try {
 			// Send API request for the class
 			let cls = <{class: any}> await sendRequest(`/classes/${uuid}`, 'GET', null);
 			// Check if the response is valid and return class
-			if(!cls)       throw new Error('Undefined response');
+			if(!cls) throw new Error(`Undefined response [Function call: getClass(${uuid})].`);
 			return cls.class;
 		}
 		catch(e) { var err = e }
@@ -47,4 +47,30 @@ async function getClass(uuid: string) {
 	process.exit(1)
 }
 
-export { getAllClasses, getClass }
+/*-< getMembersOf(groupID) >---------------------------------------------+
+| Requests and returns all users of the specified group.                 |
+| If no group is specified, a list of all global users will be returned. |
+| Crashes if the request fails five times in a row.                      |
++-----------------------------------------------------------------------*/
+async function getMembersOf(groupID: string) {
+	for(let i = 0; i < 5; ++i) {
+		try {
+			// Check if groupID is defined and send API request
+			let group = groupID ? `?memberOf=${groupID}` : '';
+			let users = <{users: string}> await sendRequest(`/users${group}`, 'GET', null);
+
+			// Throw error if the response or the 'users' property of the response is undefined
+			if(!users) throw new Error(`Undefined response [Function call: getMembersOf(${groupID})].`);
+			if(!users.users) throw new Error(`Failed to receive users of group ${groupID}.\n(users property undefined)`);
+
+			return users.users
+		} 
+		catch(e) { var err = e }
+	}
+
+	// Crash after five errors
+	console.log(`Failed to get users of group with ID ${groupID}.\nError = ${err}`);
+	process.exit(1)
+}
+
+export { getAllClasses, getClass, getMembersOf }
