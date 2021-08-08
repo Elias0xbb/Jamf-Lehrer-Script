@@ -1,4 +1,5 @@
 
+import {getConfig} from './getConfig'
 import {sendRequest} from './httpsRequests';
 
 // Interfaces
@@ -19,7 +20,7 @@ interface ClassArrayObject {
 	wallpaperId: number
 }
 
-interface DetailedClass extends ClassArrayObject {
+interface DetailedClassObject extends ClassArrayObject {
 	students: UserObject[],
 	teachers: UserObject[]
 }
@@ -76,7 +77,7 @@ async function getAllClasses(): Promise<ClassArrayObject[]> {
 | Requests and returns the class specified by the uuid.                                       |
 | Crashs after five unsuccessful tries but ignores "ClassNotFound" error (returns undefined). |
 +--------------------------------------------------------------------------------------------*/
-async function getClass(uuid: string): Promise<DetailedClass> {
+async function getClass(uuid: string): Promise<DetailedClassObject> {
 	for(let i = 0; i < 5; ++i) {
 		try {
 			// Send API request for the class
@@ -115,6 +116,54 @@ async function deleteClass(uuid: string): Promise<string> {
 	process.exit(1)
 }
 
+
+/*-< createClass(name, studentIDs, teacherIDs) >-----------------------------------------------------+
+| Creates a new class with the given name and members and returns the uuid.                          |
+| For the class description the value specified in the scriptConfig file will be used.               |
+| Null will be returned if the name is invalid and the process will be crashed if the request fails  |
+| five times in a row.                                                                               |
++---------------------------------------------------------------------------------------------------*/
+async function createClass(name: string, studentIDs: number[], teacherIDs: number[]): Promise<string> {
+	for(let i = 0; i < 5; ++i) {
+		try {
+			// Return Null and print a warning if the name is invalid
+			if(!name) {
+				console.log(`Failed to create new class {name missing} [Function: createClass].`);
+				return null;
+			}
+			// TODO: Check validity (RegEx)
+			if(name == '') {
+				console.log(`Failed to create new class {Invalid name '${name}'} [Function call: 
+					createClass(name: ${name}, studentIDs: ${studentIDs}, teacherIDs: ${teacherIDs})]`);
+				return null;
+			}
+
+			// Log a warning if teacherIDs and/or studentIDs is empty. No error will be thrown and the execution
+			// of the function will continue
+			if(teacherIDs.length === 0) console.log(`Warning: Created new class "${name}" without any teachers!`);
+			if(studentIDs.length === 0) console.log(`Warning: Created new class "${name}" without any students!`);
+
+			// Make the API request with the given parameters and the description specified in scriptConfig.json
+			const descr = getConfig().createdClassDescription;
+			const params = {
+				name: name,
+				description: descr,
+				students: studentIDs,
+				teachers: teacherIDs,
+			}
+			const response = <{uuid: string}> await sendRequest('/classes', 'POST', params);
+			// Return the uuid of the new class
+			return response.uuid;
+		}
+		catch(e) { var err = e }
+	}
+
+	// Crash after five errors
+	console.log(`Failed to create Class "${name}"/nError = ${err}`);
+	process.exit(1)
+}
+
+
 /*-< getMembersOf(groupID) >---------------------------------------------+
 | Requests and returns all users of the specified group.                 |
 | If no group is specified, a list of all global users will be returned. |
@@ -141,4 +190,4 @@ async function getMembersOf(groupID: string): Promise<DetailedUserObject[]> {
 	process.exit(1)
 }
 
-export { getAllClasses, getClass, deleteClass, getMembersOf }
+export { getAllClasses, getClass, deleteClass, createClass, getMembersOf }
