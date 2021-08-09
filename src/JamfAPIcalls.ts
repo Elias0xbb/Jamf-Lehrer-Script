@@ -2,7 +2,12 @@
 import {getConfig} from './getConfig'
 import {sendRequest} from './httpsRequests';
 
-// Interfaces
+/*=======================⊞
+ǁ ----- Interfaces ----- ǁ
+⊞=======================*/
+
+// Object that is returned when requesting  a list of 
+// all classes (GET 'https://api.zuludesk.com/classes')
 interface ClassArrayObject {
 	uuid: string,
 	name: string,
@@ -20,11 +25,15 @@ interface ClassArrayObject {
 	wallpaperId: number
 }
 
+// Object representing a class, returned by the 'find a class'
+// API call (GET 'https://api.zuludesk.com/classes/:uuid')
 interface DetailedClassObject extends ClassArrayObject {
 	students: UserObject[],
 	teachers: UserObject[]
 }
 
+// User representation in the students
+// and teachers Array of 'DetailedClassObject'
 interface UserObject {
 	id: number,
 	name: string,
@@ -35,6 +44,9 @@ interface UserObject {
 	photo: string
 }
 
+// The response Object to the 'list users' API call
+// (GET 'https://api.zuludesk.com/users') contains
+// an array of objects storing the following data: 
 interface DetailedUserObject {
 	id: number,
     locationId: number,
@@ -48,6 +60,16 @@ interface DetailedUserObject {
     name: string,
     groupIds: number[]
 }
+
+
+
+
+				/*======================⊞
+- - + + + + + + ǁ ----- FUNCTIONS ----- ǁ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + - -
+				⊞======================*/
+
+
+
 
 /*-< getAllClasses() >-------------------------------------------+
 | Requests and returns all classes.                              |
@@ -229,4 +251,4 @@ async function addUsersToClass(uuid: string, studentIDs: string[], teacherIDs: s
 	process.exit(1)
 }
 
-export { getAllClasses, getClass, deleteClass, createClass, getMembersOf }
+export { getAllClasses, getClass, deleteClass, createClass, addUsersToClass, getMembersOf }
