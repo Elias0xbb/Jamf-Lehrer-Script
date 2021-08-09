@@ -33,7 +33,7 @@ interface DetailedClassObject extends ClassArrayObject {
 }
 
 // User representation in the students
-// and teachers Array of 'DetailedClassObject'
+// and teachers array of 'DetailedClassObject'
 interface UserObject {
 	id: number,
 	name: string,
@@ -64,10 +64,9 @@ interface DetailedUserObject {
 
 
 
-				/*======================⊞
-- - + + + + + + ǁ ----- FUNCTIONS ----- ǁ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + - -
-				⊞======================*/
-
+/*========================================================================⊞
+ǁ  ----- ----- ----- ----- ----- FUNCTIONS ----- ----- ----- ----- -----  ǁ
+⊞========================================================================*/
 
 
 
@@ -251,4 +250,43 @@ async function addUsersToClass(uuid: string, studentIDs: string[], teacherIDs: s
 	process.exit(1)
 }
 
-export { getAllClasses, getClass, deleteClass, createClass, addUsersToClass, getMembersOf }
+
+async function removeUsersFromClass(uuid: string, studentIDs: string[], teacherIDs: string[]) {
+	for(let i = 0; i < 5; ++i) {
+		try {
+			if(!studentIDs || !teacherIDs) throw new Error(
+				`Undefined parameter (teacherIDs or studentIDs) [Function call: rem..FromClass(${uuid},...)`
+			);
+
+			if(studentIDs.length + teacherIDs.length === 0) {
+				console.log(`Warning: Tried to remove 0 users from class ${uuid}`);
+				return null;
+			}
+
+			const strArrayToList = (arr: string[]):string => {
+				return arr.reduce((total: string, current: string): string => (`${total},${current}`));
+			}
+
+			let params = studentIDs.length > 0
+				? `?students=${strArrayToList(studentIDs)}`
+				: '';
+			params += teacherIDs.length > 0
+				? `${params === '' ? '?' : '&'}teachers=${strArrayToList(teacherIDs)}`
+				: '';
+
+			let path = `/classes/${uuid}/users${params}`;
+			let response = await sendRequest(path, 'DELETE', null);
+
+			return response;
+		}
+		catch(e) { var err = e }
+	}
+
+	console.log(
+		`Failed to assign ${studentIDs.length+teacherIDs.length} new users to class ${uuid}.\nError = ${err}`
+	);
+	process.exit(1)
+}
+
+
+export { getAllClasses, getClass, deleteClass, createClass, addUsersToClass, removeUsersFromClass, getMembersOf }
