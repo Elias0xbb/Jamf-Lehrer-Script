@@ -190,4 +190,43 @@ async function getMembersOf(groupID: string): Promise<DetailedUserObject[]> {
 	process.exit(1)
 }
 
+
+/*-< addUsersToClass(uuid, studentIDs, teacherIDs) >-------------------------------------------------+
+| Adds the students and teachers to the class specified by its uuid. If the studentIDs / teacherIDs  |
+| list is empty, no teachers / students will be added to the class.                                  |
+| Example: addUsersToClass('xyz', ['1234', '1235'], []) will add two students and 0 teachers to the  |
+| class with uuid 'xyz'.                                                                             |
+| After five errors in a row the process will be stopped and an error message displayed.             |
++---------------------------------------------------------------------------------------------------*/
+async function addUsersToClass(uuid: string, studentIDs: string[], teacherIDs: string[]): Promise<string> {
+	for(let i = 0; i < 5; ++i) {
+		try {
+			// Check uuid and throw error if null / empty
+			if(!uuid || uuid === '') throw new Error(
+				`Missing uuid. [Function call: addUserToClass(${uuid}, ${studentIDs}, ${teacherIDs})]`
+			);
+			// Create an object with the userIDs of the students and teachers
+			let params = {
+				teachers: teacherIDs,
+				students: studentIDs,
+			}
+			// Send the API request and check if the response is defined
+			const res = <{message: string}> await sendRequest(`/classes/${uuid}/users`, 'PUT', params);
+			if(!res) throw new Error(
+				`Undefined response [Function call: addUserToClass(${uuid}, ${studentIDs}, ${teacherIDs})].`
+			);
+			// Return response message (should be 'ClassSaved')
+			console.log(res)
+			return res.message;
+		}
+		catch(e) { var err = e }
+	}
+
+	// Crash after five errors
+	console.log(
+		`Failed to add students ${studentIDs} and teachers ${teacherIDs} to class ${uuid}.\nError = ${err}`
+	);
+	process.exit(1)
+}
+
 export { getAllClasses, getClass, deleteClass, createClass, getMembersOf }
