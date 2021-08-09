@@ -3,3 +3,4 @@ node_modules/
 ./src/*.js
 .nvimlog
 ./src/.nvimlog
+.DS_Store
