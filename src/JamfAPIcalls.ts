@@ -15,7 +15,7 @@ interface ClassArrayObject {
 	locationId: number,
 	source: string,
 	image: string,
-	classAsmIdentifier: number,
+	classAsmIdentifier: string,
 	userGroupId: number,
 	studentCount: number,
 	teacherCount: number,
@@ -251,22 +251,35 @@ async function addUsersToClass(uuid: string, studentIDs: string[], teacherIDs: s
 }
 
 
+/*-< removeUsersFromClass(uuid, studentIDs, teacherIDs) >-------------------------------------+
+| Removes given students and teachers from the class specified by its uuid.                   |
+| Returns the message responded by the Jamf Server if the request was send successfully,      |
+| returns null if the teacherIDs and studentIDs arrays are both empty and displays a warning. |
+| After five unsuccessful attempts to send the request, the program will be crashed.          |
++--------------------------------------------------------------------------------------------*/
 async function removeUsersFromClass(uuid: string, studentIDs: string[], teacherIDs: string[]) {
 	for(let i = 0; i < 5; ++i) {
 		try {
+			//check if studentIDs and teacherIDs are defined
 			if(!studentIDs || !teacherIDs) throw new Error(
 				`Undefined parameter (teacherIDs or studentIDs) [Function call: rem..FromClass(${uuid},...)`
 			);
 
+			// If both studentIDs and teacherIDs are empty, display warning and return null
 			if(studentIDs.length + teacherIDs.length === 0) {
 				console.log(`Warning: Tried to remove 0 users from class ${uuid}`);
 				return null;
 			}
 
+			// -< strArrayToList(arr) >-----------------------------------------------------------------+
+			// Converts a string array into a single string where the array items are seperated by commas
 			const strArrayToList = (arr: string[]):string => {
 				return arr.reduce((total: string, current: string): string => (`${total},${current}`));
 			}
 
+			// Create a (correctly formatted) string containing the array(s)
+			// The arrays have to be send as part of the URL
+			// (see 'https://api.zuludesk.com/docs/#api-Classes')
 			let params = studentIDs.length > 0
 				? `?students=${strArrayToList(studentIDs)}`
 				: '';
@@ -274,14 +287,17 @@ async function removeUsersFromClass(uuid: string, studentIDs: string[], teacherI
 				? `${params === '' ? '?' : '&'}teachers=${strArrayToList(teacherIDs)}`
 				: '';
 
+			// Send the request and return the response message
+			// If the deletion was successful, the message should be 'ClassUsersDeleted'
 			let path = `/classes/${uuid}/users${params}`;
-			let response = await sendRequest(path, 'DELETE', null);
+			let response = <{message: string}> await sendRequest(path, 'DELETE', null);
 
-			return response;
+			return response.message;
 		}
 		catch(e) { var err = e }
 	}
 
+	// Crash after five errors
 	console.log(
 		`Failed to assign ${studentIDs.length+teacherIDs.length} new users to class ${uuid}.\nError = ${err}`
 	);
