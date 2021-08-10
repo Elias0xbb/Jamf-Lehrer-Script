@@ -3,7 +3,8 @@ import * as fs from 'fs';
 // Interface describing the config object
 interface ConfigObject {
 	createdClassDescription: string,
-	classUserGroupRegExps: RegExp[],
+	classUserGroupRegEx: string,
+	verboseMode: boolean,
 }
 // Relative path to the script configuration file. Default path: ../config/scriptConfig.json
 const CONFIG_PATH = '../config/scriptConfig.json';
