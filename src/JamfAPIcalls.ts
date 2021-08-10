@@ -61,6 +61,16 @@ interface DetailedUserObject {
     groupIds: number[]
 }
 
+// Objects returned by the list all groups API call
+interface GroupObject {
+	id: number,                                      
+    locationId: number,                 
+    name: string,
+    description: string,
+    userCount: number,
+    acl: { teacher: string, parent: string },
+    modified: string
+}
 
 
 
@@ -185,6 +195,33 @@ async function createClass(name: string, studentIDs: number[], teacherIDs: numbe
 }
 
 
+/*-< getAllGroups() >-------------------------------------------+
+| Requests and returns all groups.                               |
+| If the request fails five times, the program will be crashed.  |
++---------------------------------------------------------------*/
+async function getAllGroups(): Promise<GroupObject[]> {
+	for(let i = 0; i < 5; ++i) {
+		try {
+			// Send API request for all groups
+			let response = <{groups: GroupObject[]}> await sendRequest('/users/groups', 'GET', null);
+
+			// If the returned value or its 'groups' property is not defined, throw an error
+			if(!response) throw new Error(`Undefined response [Function call: getAllGroups()].`);
+			if(!response.groups) throw new Error(`
+				Groups property of response undefined [Function call: getAllGroups()]`
+			);
+			// Return groups if the request was successful
+			return response.groups;
+		}
+		catch(e) { var err = e }
+	}
+	
+	// Crash program after five errors 
+	console.log(`Failed to receive Groups.\nError = ${err}`);
+	process.exit(1)
+}
+
+
 /*-< getMembersOf(groupID) >---------------------------------------------+
 | Requests and returns all users of the specified group.                 |
 | If no group is specified, a list of all global users will be returned. |
@@ -305,4 +342,7 @@ async function removeUsersFromClass(uuid: string, studentIDs: string[], teacherI
 }
 
 
-export { getAllClasses, getClass, deleteClass, createClass, addUsersToClass, removeUsersFromClass, getMembersOf }
+export {
+	getAllClasses, getClass, deleteClass, createClass, addUsersToClass, removeUsersFromClass,
+	getMembersOf, getAllGroups, 
+}
