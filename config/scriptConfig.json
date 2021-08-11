@@ -1,5 +1,5 @@
 {
 	"createdClassDescription": "__IGNORE__",
-	"classUserGroupRegExps": "^(k|q|j|(ib)|(gt))\\d{1,2}\\w*\\d*.\\w+\\d*\\s*$",
+	"classUserGroupRegEx": "^(k|q|j|(ib)|(gt))\\d{1,2}\\w*\\d*.\\w+\\d*\\s*$",
 	"verboseMode": true
 }
