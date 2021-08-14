@@ -20,7 +20,13 @@ async function main(): Promise<number> {
 		let classGroupPairs = combineGroupsAndClasses(groups, classes);
 
 		// TODO: delete classes
-		
+		for(let i = 0; i < classes.length; ++i) {
+			let res = await jac.deleteClass(classes[i].uuid);
+			if(res != 'ClassDeleted') console.log(
+				`Warning: Received response ${res} while trying to delete class ${classes[i].name}`
+			);
+		}
+	
 		// TODO: create classes
 		
 		// TODO: correct classes
