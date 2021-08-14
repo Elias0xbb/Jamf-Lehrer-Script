@@ -345,4 +345,6 @@ async function removeUsersFromClass(uuid: string, studentIDs: string[], teacherI
 export {
 	getAllClasses, getClass, deleteClass, createClass, addUsersToClass, removeUsersFromClass,
 	getMembersOf, getAllGroups, 
+	// interfaces
+	ClassArrayObject, GroupObject,
 }
