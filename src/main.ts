@@ -19,17 +19,18 @@ async function main(): Promise<number> {
 		// Create an array of group-class pairs
 		let classGroupPairs = combineGroupsAndClasses(groups, classes);
 
-		// TODO: delete classes
-		for(let i = 0; i < classes.length; ++i) {
-			let res = await jac.deleteClass(classes[i].uuid);
+		// Delete all classes that shouldn't exist
+		for(const cls of classes) {
+			let res = await jac.deleteClass(cls.uuid);
+			// Display warning if response message isn't 'ClassDeleted'
 			if(res != 'ClassDeleted') console.log(
-				`Warning: Received response ${res} while trying to delete class ${classes[i].name}`
+				`Warning: Received response ${res} while trying to delete class ${cls.name}`
 			);
 		}
 	
-		// TODO: create classes
-		
-		// TODO: correct classes
+		// Check all group-class pairs and create / correct missing / incorrect classes
+		const teacherGroupID = getConfig().teacherGroupID;
+		await checkClassGroups(classGroupPairs, teacherGroupID);
 		
 		// Return 0 if the execution was successful
 		return 0;
@@ -41,13 +42,15 @@ async function main(): Promise<number> {
 	}
 }
 
+interface GroupClassPairObject { name: string, groupID: number, classUUID: string }
+
 /*-< combineGroupsAndClasses(groups, classes) >-------------------------------------+
 | Creates an Array of group-class pairs. If no class with an identical name exists, |
 | only the group id and name will be stored and the class uuid will be undefined.   |
 +----------------------------------------------------------------------------------*/
 function combineGroupsAndClasses(groups: {name: string, id: number}[], classes: jac.ClassArrayObject[]) {
 	// The groupsClasses array stores the group-class pairs
-	let groupsClasses: {name: string, groupID: number, classUUID: string}[] = [];
+	let groupsClasses: GroupClassPairObject[] = [];
 	// getClass(name) returns and removes the first class with the given name
 	// from the classes array. Returns undefined if none exists.
 	const getClass = ((name: string) => {
@@ -109,6 +112,39 @@ async function getValidGroups(): Promise<{name: string, id: number}[]> {
 		);
 	}
 	return validGroups;
+}
+
+/*-< checkClassGroups(grpClsArray, teacherGroupID) >-----------------------------------+
+| Checks if a corresponding class exists for every group and if the class has the same |
+| members as the group. Creates all missing classes and adds / removes class members   |
+| if necessary.                                                                        |
++-------------------------------------------------------------------------------------*/
+async function checkClassGroups(grpClsArray: GroupClassPairObject[], teacherGroupID: number) {
+	// Loop over the group-class pair array
+	for(const e of grpClsArray) {
+		// Create a new class if none exists
+		if(!e.classUUID) {
+			// Get all group members
+			let group = await jac.getMembersOf(`${e.groupID}`);
+
+			// Get the id of every teacher and student
+			let teachers: string[] = [];
+			let students: string[] = [];
+
+			for(const user of group) {
+				// If the user is part of the teachers group, add them to the teachers array
+				let isTeacher = user.groupIds.indexOf(teacherGroupID) > -1;
+				if(isTeacher) {
+					teachers.push(`${user.id}`);
+				}
+				// Otherwise add the user to the students array
+				else students.push(`${user.id}`);
+			}
+
+			// Create the new class
+			let res = await jac.createClass(e.name, students, teachers);
+		}
+	}
 }
 
 

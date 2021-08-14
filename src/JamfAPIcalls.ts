@@ -154,7 +154,7 @@ async function deleteClass(uuid: string): Promise<string> {
 | Null will be returned if the name is invalid and the process will be crashed if the request fails  |
 | five times in a row.                                                                               |
 +---------------------------------------------------------------------------------------------------*/
-async function createClass(name: string, studentIDs: number[], teacherIDs: number[]): Promise<string> {
+async function createClass(name: string, studentIDs: string[], teacherIDs: string[]): Promise<string> {
 	for(let i = 0; i < 5; ++i) {
 		try {
 			// Return Null and print a warning if the name is invalid
