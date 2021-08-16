@@ -3,5 +3,7 @@
 	"classUserGroupRegEx": "^(k|q|j|(ib)|(gt))\\d{1,2}\\w*\\d*.\\w+\\d*\\s*$",
 	"verboseMode": true,
 	"minValidGroupCount": 300,
-	"teacherGroupID": 3210
+	"teacherGroupID": 3210,
+	"changedStudentsLimit": 8,
+	"changedTeachersLimit": 1
 }

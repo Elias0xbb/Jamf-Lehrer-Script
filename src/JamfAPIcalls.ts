@@ -346,5 +346,5 @@ export {
 	getAllClasses, getClass, deleteClass, createClass, addUsersToClass, removeUsersFromClass,
 	getMembersOf, getAllGroups, 
 	// interfaces
-	ClassArrayObject, GroupObject,
+	ClassArrayObject, GroupObject, UserObject, DetailedUserObject, 
 }
