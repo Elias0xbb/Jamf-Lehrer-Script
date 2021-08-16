@@ -73,8 +73,10 @@ async function main(): Promise<number> {
 		}
 		console.log(`Deleted ${nDeletedClasses} classes.`);
 	
-		// Check all group-class pairs and create / correct missing / incorrect classes
+		// Check all group-class pairs and create/correct missing/incorrect classes
 		await checkClassGroups(classGroupPairs);
+
+		// TODO: Go through all classes and groups to check if everything is correct
 		
 		// Return 0 if the execution was successful
 		return 0;
@@ -160,13 +162,13 @@ async function createClassFromGroupMembers(clsName: string, members: jac.Detaile
 	let teachers: string[] = [];
 	let students: string[] = [];
 
-	for(const user of members) {
+	members.forEach(user => {
 		let isTeacher = user.groupIds.indexOf(config.teacherGroupID) > -1;
 		// If the user is part of the teachers group, add them to the teachers array
 		if(isTeacher) teachers.push(`${user.id}`);
 		// Otherwise add the user to the students array
 		else students.push(`${user.id}`);
-	}
+	});
 
 	// Create the new class
 	await jac.createClass(clsName, students, teachers);
@@ -179,10 +181,11 @@ async function createClassFromGroupMembers(clsName: string, members: jac.Detaile
 +-------------------------------------------------------------------------------------*/
 async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 	// Loop over the group-class pair array
-	let viewedClasses = 0;
+	let viewedClasses = 0;     // # of classes that have been checked in total
 	let nCorrectedClasses = 0; // # of classes that had to be corrected due to missing / incorrect members
 	let nCreatedClasses = 0;   // # of classes that were missing and thus had to be created 
 
+	// Calculate 10% of the total number of classes/groups for the progress bar
 	let tenPercentOfCG = Math.ceil(grpClsArray.length / 10);
 
 	for(const e of grpClsArray) {
@@ -251,13 +254,15 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 	}
 
 	// Check if the class changed and return if not
-	let nChangedUsers = misStudents.length + misTeachers.length;
-	nChangedUsers += cls.students.length = cls.teachers.length;
-	if(nChangedUsers <= 0) return 0;
+	const nChangedStudents = misStudents.length + cls.students.length;
+	const nChangedTeachers = misTeachers.length = cls.teachers.length; 
+
+	if(nChangedStudents + nChangedTeachers <= 0) return 0;
 	
 	// If the teacher changed or many of the students, delete the class and create a new one
-	let isNewClass = misStudents.length + cls.students.length > config.changedStudentsLimit;
-	isNewClass ||= misTeachers.length + cls.teachers.length > config.changedTeachersLimit;
+	let isNewClass = nChangedStudents > config.changedStudentsLimit;
+	isNewClass ||= nChangedTeachers > config.changedTeachersLimit;
+	
 	if(isNewClass) {
 		verbosePrint(`Rebuiling class ${cls.name}`);
 		// Delete the old class
@@ -300,7 +305,7 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 			}
 		}
 
-		// Add missing users to the class if necassar
+		// Add missing users to the class if necessary
 		if(misStudents.length + misTeachers.length > 0) {
 			verbosePrint(
 				`Adding ${misStudents.length} students and ${misTeachers.length} ` +
@@ -319,7 +324,7 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 		}
 	}
 
-	return nChangedUsers;
+	return nChangedStudents + nChangedTeachers;
 }
 
 
