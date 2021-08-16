@@ -74,8 +74,7 @@ async function main(): Promise<number> {
 		console.log(`Deleted ${nDeletedClasses} classes.`);
 	
 		// Check all group-class pairs and create / correct missing / incorrect classes
-		const teacherGroupID = config.teacherGroupID;
-		await checkClassGroups(classGroupPairs, teacherGroupID);
+		await checkClassGroups(classGroupPairs);
 		
 		// Return 0 if the execution was successful
 		return 0;
@@ -153,45 +152,174 @@ async function getValidGroups(): Promise<{name: string, id: number}[]> {
 	return validGroups;
 }
 
+/*-< createClassFromGroupMembers(clsName, members) >-+
+| Creates a new class from an array of user objects. |
++---------------------------------------------------*/
+async function createClassFromGroupMembers(clsName: string, members: jac.DetailedUserObject[]) {
+	// Get the id of every teacher and student
+	let teachers: string[] = [];
+	let students: string[] = [];
+
+	for(const user of members) {
+		let isTeacher = user.groupIds.indexOf(config.teacherGroupID) > -1;
+		// If the user is part of the teachers group, add them to the teachers array
+		if(isTeacher) teachers.push(`${user.id}`);
+		// Otherwise add the user to the students array
+		else students.push(`${user.id}`);
+	}
+
+	// Create the new class
+	await jac.createClass(clsName, students, teachers);
+}
+
 /*-< checkClassGroups(grpClsArray, teacherGroupID) >-----------------------------------+
 | Checks if a corresponding class exists for every group and if the class has the same |
 | members as the group. Creates all missing classes and adds / removes class members   |
 | if necessary.                                                                        |
 +-------------------------------------------------------------------------------------*/
-async function checkClassGroups(grpClsArray: GroupClassPairObject[], teacherGroupID: number) {
+async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 	// Loop over the group-class pair array
+	let viewedClasses = 0;
 	let nCorrectedClasses = 0; // # of classes that had to be corrected due to missing / incorrect members
 	let nCreatedClasses = 0;   // # of classes that were missing and thus had to be created 
+
+	let tenPercentOfCG = Math.ceil(grpClsArray.length / 10);
+
 	for(const e of grpClsArray) {
 		// Create a new class if none exists
 		if(!e.classUUID) {
 			nCreatedClasses++;
-			// Get all group members
+			// Get all group members and create the class
 			let group = await jac.getMembersOf(`${e.groupID}`);
-
-			// Get the id of every teacher and student
-			let teachers: string[] = [];
-			let students: string[] = [];
-
-			for(const user of group) {
-				let isTeacher = user.groupIds.indexOf(teacherGroupID) > -1;
-				// If the user is part of the teachers group, add them to the teachers array
-				if(isTeacher) teachers.push(`${user.id}`);
-				// Otherwise add the user to the students array
-				else students.push(`${user.id}`);
-			}
-
-			// Create the new class
-			await jac.createClass(e.name, students, teachers);
+			createClassFromGroupMembers(e.name, group);
+			
 			verbosePrint(`Created new class '${e.name}'.`);
 		} 
 		// Check class to see if the students and teachers match the corresponding group's members
 		else {
-			// TODO: Check
+			const corrections = await correctClass(e);
+			if(corrections > 0) nCorrectedClasses++;
+		}
+		
+		viewedClasses++;
+		if(viewedClasses % tenPercentOfCG === 0) {
+			console.log(
+				`Viewed ${viewedClasses} / ${grpClsArray.length} classes ` +
+				`(${Math.floor(viewedClasses/grpClsArray.length * 100)}%)`
+			);
 		}
 	}
 	console.log(`Created ${nCreatedClasses} missing classes.`);
 	console.log(`Corrected ${nCorrectedClasses} classes.`);
+}
+
+async function correctClass(clsGroupPair: GroupClassPairObject) {
+	// Get detailed information on the class and the group
+	const cls = await jac.getClass(clsGroupPair.classUUID);
+	const grpUsers = await jac.getMembersOf(`${clsGroupPair.groupID}`);
+
+	// Find all the teachers and students that are members of the group but cannot be found in the class.
+	// The missing users are then stored in 'clsMissing' so that they can be added to the class.
+	// While searching for the group members in cls.students / -.teachers, the users that are found
+	// will be removed from cls.students / -.teachers so that any incorrect class members can be removed
+	// from the class after all the correct users have been found and removed from the arrays.
+	let misStudents: string[] = [];
+	let misTeachers: string[] = [];
+	
+	// Finds a user and removes it from the array. Returns the user object.
+	const findUser = (src: jac.UserObject[], id: number) => {
+		const pos = src.map(e => e.id).indexOf(id);
+		// If the user does not exist, return undefined
+		return pos > -1 ? src.splice(pos, 1)[0] : void 0;
+	}
+
+	for(const usr of grpUsers) {
+		// Check if the user is a teacher
+		const isTeacher = usr.groupIds.indexOf(config.teacherGroupID) > -1;
+		// If the user is a teacher, search the teachers array of cls to see if their id is included
+		if(isTeacher) {
+			const teacher = findUser(cls.teachers, usr.id);
+			// If the teacher's id wasn't found in cls.teachers, add the id to the missing teachers array
+			if(!teacher) misTeachers.push(`${usr.id}`);
+		}
+		// If the user is a student, search the students array of cls for their id
+		else {
+			const student = findUser(cls.students, usr.id);
+			// If the id wasn't found, add usr.id to the missing students array
+			if(!student) misStudents.push(`${usr.id}`);
+		}
+	}
+
+	// Check if the class changed and return if not
+	let nChangedUsers = misStudents.length + misTeachers.length;
+	nChangedUsers += cls.students.length = cls.teachers.length;
+	if(nChangedUsers <= 0) return 0;
+	
+	// If the teacher changed or many of the students, delete the class and create a new one
+	let isNewClass = misStudents.length + cls.students.length > config.changedStudentsLimit;
+	isNewClass ||= misTeachers.length + cls.teachers.length > config.changedTeachersLimit;
+	if(isNewClass) {
+		verbosePrint(`Rebuiling class ${cls.name}`);
+		// Delete the old class
+		const res = await jac.deleteClass(cls.uuid);
+		// If the response is not 'ClassDeleted', print a warning
+		if(res != 'ClassDeleted') {
+			console.log(
+				`Warning: Class ${cls.name} might not have been deleted successfully (response: ${res}).`
+			);
+			const {name, groupID, classUUID} = clsGroupPair;
+			console.log(`[Function call: correctClass({${name}, ${groupID}, ${classUUID}})]`);
+			
+			// TODO: Error handling
+		}
+
+		// Create a new class
+		await createClassFromGroupMembers(cls.name, grpUsers);
+	}
+	// If it is not a new class, correct users if necessary
+	else {
+		// Create arrays with the ids of the incorrect students / teachers and remove them from the class
+		const incStdIds = cls.students.map(s => `${s.id}`);
+		const incTchIds = cls.teachers.map(t => `${t.id}`);
+		
+		// Delete users if necessary
+		if(incStdIds.length + incTchIds.length > 0) {
+			verbosePrint(
+				`Removing ${incStdIds.length} students and ${incTchIds.length} teacher from class ${cls.name}`
+			);
+
+			let res = await jac.removeUsersFromClass(cls.uuid, incStdIds, incTchIds);
+			// If the response is not ClassUsersDeleted, print a warning
+			if(res != 'ClassUsersDeleted') {
+				console.log(
+					`Warning: Possible error after removing users from class '${cls.name}'. Response = '${res}'`
+				);
+				console.log(`[Function: correctClass]`);
+
+				// TODO: error handling
+			}
+		}
+
+		// Add missing users to the class if necassar
+		if(misStudents.length + misTeachers.length > 0) {
+			verbosePrint(
+				`Adding ${misStudents.length} students and ${misTeachers.length} ` +
+				`teachers to ${cls.name}`
+			);
+			const res = await jac.addUsersToClass(cls.uuid, misStudents, misTeachers);
+			// Print warning if response is unexpected
+			if(res != 'ClassSaved') {
+				console.log(
+					`Warning: Possible error after adding users to class '${cls.name}'. Response = '${res}'`
+				);
+				console.log(`[Function: correctClass]`);
+
+				// TODO: error handling
+			}
+		}
+	}
+
+	return nChangedUsers;
 }
 
 

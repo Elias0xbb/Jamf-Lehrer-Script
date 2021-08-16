@@ -7,6 +7,8 @@ interface ConfigObject {
 	verboseMode: boolean,
 	minValidGroupCount: number,
 	teacherGroupID: number,
+	changedStudentsLimit: number,
+	changedTeachersLimit: number,
 }
 // Relative path to the script configuration file. Default path: ../config/scriptConfig.json
 const CONFIG_PATH = '../config/scriptConfig.json';
