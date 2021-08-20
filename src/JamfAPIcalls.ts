@@ -1,4 +1,5 @@
 
+import * as hf from './helperFunctions'
 import {getConfig} from './getConfig'
 import {sendRequest} from './httpsRequests';
 
@@ -100,7 +101,7 @@ async function getAllClasses(): Promise<ClassArrayObject[]> {
 	}
 	
 	// Crash program after five errors 
-	console.log(`Failed to receive classes.\nError = ${err}`);
+	console.log(`Failed to receive classes.\n${hf.toRed('Error')} = ${err}`);
 	process.exit(1)
 }
 
@@ -121,7 +122,7 @@ async function getClass(uuid: string): Promise<DetailedClassObject> {
 	}
 	
 	// Crash after five errors
-	console.log(`Failed to get Class ${uuid}\nError = ${err}`);
+	console.log(`Failed to get Class ${uuid}\n${hf.toRed('Error')} = ${err}`);
 	process.exit(1)
 }
 
@@ -143,7 +144,7 @@ async function deleteClass(uuid: string): Promise<string> {
 		catch(e) { var err = e }
 	}
 	
-	console.log(`Failed to delete class ${uuid}\nError = ${err}`);
+	console.log(`Failed to delete class ${uuid}\n${hf.toRed('Error')} = ${err}`);
 	process.exit(1)
 }
 
@@ -171,8 +172,10 @@ async function createClass(name: string, studentIDs: string[], teacherIDs: strin
 
 			// Log a warning if teacherIDs and/or studentIDs is empty. No error will be thrown and the execution
 			// of the function will continue
-			if(teacherIDs.length === 0) console.log(`Warning: Created new class "${name}" without any teachers!`);
-			if(studentIDs.length === 0) console.log(`Warning: Created new class "${name}" without any students!`);
+			if(teacherIDs.length === 0) console.log(`${hf.toYellow('Warning')}: ` +
+				`Created new class "${name}" without any teachers!`);
+			if(studentIDs.length === 0) console.log(`${hf.toYellow('Warning')}: ` +
+				`Created new class "${name}" without any students!`);
 
 			// Make the API request with the given parameters and the description specified in scriptConfig.json
 			const descr = getConfig().createdClassDescription;
@@ -190,14 +193,14 @@ async function createClass(name: string, studentIDs: string[], teacherIDs: strin
 	}
 
 	// Crash after five errors
-	console.log(`Failed to create Class "${name}"/nError = ${err}`);
+	console.log(`Failed to create Class "${name}"/n${hf.toRed('Error')} = ${err}`);
 	process.exit(1)
 }
 
 
 /*-< getAllGroups() >-------------------------------------------+
-| Requests and returns all groups.                               |
-| If the request fails five times, the program will be crashed.  |
+| Requests and returns all groups.                              |
+| If the request fails five times, the program will be crashed. |
 +---------------------------------------------------------------*/
 async function getAllGroups(): Promise<GroupObject[]> {
 	for(let i = 0; i < 5; ++i) {
@@ -217,7 +220,7 @@ async function getAllGroups(): Promise<GroupObject[]> {
 	}
 	
 	// Crash program after five errors 
-	console.log(`Failed to receive Groups.\nError = ${err}`);
+	console.log(`Failed to receive Groups.\n${hf.toRed("Error")} = ${err}`);
 	process.exit(1)
 }
 
@@ -244,7 +247,7 @@ async function getMembersOf(groupID: string): Promise<DetailedUserObject[]> {
 	}
 
 	// Crash after five errors
-	console.log(`Failed to get users of group with ID ${groupID}.\nError = ${err}`);
+	console.log(`Failed to get users of group with ID ${groupID}.\n${hf.toRed('Error')} = ${err}`);
 	process.exit(1)
 }
 
@@ -274,7 +277,6 @@ async function addUsersToClass(uuid: string, studentIDs: string[], teacherIDs: s
 				`Undefined response [Function call: addUserToClass(${uuid}, ${studentIDs}, ${teacherIDs})].`
 			);
 			// Return response message (should be 'ClassSaved')
-			console.log(res)
 			return res.message;
 		}
 		catch(e) { var err = e }
@@ -282,7 +284,8 @@ async function addUsersToClass(uuid: string, studentIDs: string[], teacherIDs: s
 
 	// Crash after five errors
 	console.log(
-		`Failed to add students ${studentIDs} and teachers ${teacherIDs} to class ${uuid}.\nError = ${err}`
+		`Failed to add students ${studentIDs} and teachers ${teacherIDs} to class ${uuid}.` +
+		`\n${hf.toRed('Error')} = ${err}`
 	);
 	process.exit(1)
 }
@@ -304,7 +307,7 @@ async function removeUsersFromClass(uuid: string, studentIDs: string[], teacherI
 
 			// If both studentIDs and teacherIDs are empty, display warning and return null
 			if(studentIDs.length + teacherIDs.length === 0) {
-				console.log(`Warning: Tried to remove 0 users from class ${uuid}`);
+				console.log(`${hf.toYellow('Warning')}: Tried to remove 0 users from class ${uuid}`);
 				return null;
 			}
 
@@ -336,7 +339,8 @@ async function removeUsersFromClass(uuid: string, studentIDs: string[], teacherI
 
 	// Crash after five errors
 	console.log(
-		`Failed to assign ${studentIDs.length+teacherIDs.length} new users to class ${uuid}.\nError = ${err}`
+		`Failed to assign ${studentIDs.length+teacherIDs.length} new users to class ${uuid}.` +
+		`\n${hf.toRed('Error')} = ${err}`
 	);
 	process.exit(1)
 }
