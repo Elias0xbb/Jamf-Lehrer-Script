@@ -2,7 +2,9 @@
 // Helper function that returns the config object
 import {getConfig} from './getConfig';
 // Jamf API call functions lib
-import * as jac from './JamfAPIcalls'
+import * as jac from './JamfAPIcalls';
+// Helper Functions
+import * as hf from './helperFunctions';
 
 
 // Get config object
@@ -32,7 +34,7 @@ const config = (_ => {
 		}
 		return config;
 	}
-	console.log('Error: Console object undefined!');
+	console.log(`${hf.toRed('Error')}: Console object undefined!`);
 	process.exit(1);
 })();
 
@@ -53,7 +55,7 @@ async function main(): Promise<number> {
 		console.log(`Requesting classes and groups...`);
 		let groups = await getValidGroups();
 		let classes = await jac.getAllClasses();
-		console.log(`Received ${groups.length} class groups and ${classes.length} classes.`);
+		console.log(hf.toCyan(`Received ${groups.length} class groups and ${classes.length} classes.`));
 
 		// Create an array of group-class pairs
 		verbosePrint(`Creating class-group pair array...`);
@@ -68,7 +70,7 @@ async function main(): Promise<number> {
 			let res = await jac.deleteClass(cls.uuid);
 			// Display warning if response message isn't 'ClassDeleted'
 			if(res != 'ClassDeleted') console.log(
-				`Warning: Received response ${res} while trying to delete class ${cls.name}`
+				`${hf.toYellow('Warning')}: Received response ${res} while trying to delete class ${cls.name}`
 			);
 		}
 		console.log(`Deleted ${nDeletedClasses} classes.`);
@@ -78,12 +80,13 @@ async function main(): Promise<number> {
 
 		// TODO: Go through all classes and groups to check if everything is correct
 		
+		console.log(hf.toGreen('DONE!'));
 		// Return 0 if the execution was successful
 		return 0;
 	}
 	catch(e) {
 		// TODO: Error handling
-		console.error(e);
+		console.log(`${hf.toRed('Error')}: ${e}`);
 		return 1;
 	}
 }
@@ -148,7 +151,8 @@ async function getValidGroups(): Promise<{name: string, id: number}[]> {
 	// Throw error if less valid classes than expected were found (to prevent unwanted deletion)
 	if(validGroups.length < config.minValidGroupCount) {
 		throw new Error(
-			`Only ${validGroups.length} valid groups were found. If this is correct, increase 'minValidGroupCount' in the config file.`
+			`Only ${validGroups.length} valid groups were found. ` +
+			`If this is correct, increase 'minValidGroupCount' in the config file.`
 		);
 	}
 	return validGroups;
@@ -206,14 +210,14 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 		
 		viewedClasses++;
 		if(viewedClasses % tenPercentOfCG === 0) {
-			console.log(
+			console.log(hf.toBlue(
 				`Viewed ${viewedClasses} / ${grpClsArray.length} classes ` +
 				`(${Math.floor(viewedClasses/grpClsArray.length * 100)}%)`
-			);
+			));
 		}
 	}
-	console.log(`Created ${nCreatedClasses} missing classes.`);
-	console.log(`Corrected ${nCorrectedClasses} classes.`);
+	console.log(hf.toMagenta(`Created ${nCreatedClasses} missing classes.`));
+	console.log(hf.toMagenta(`Corrected ${nCorrectedClasses} classes.`));
 }
 
 async function correctClass(clsGroupPair: GroupClassPairObject) {
@@ -270,7 +274,8 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 		// If the response is not 'ClassDeleted', print a warning
 		if(res != 'ClassDeleted') {
 			console.log(
-				`Warning: Class ${cls.name} might not have been deleted successfully (response: ${res}).`
+				`${hf.toYellow('Warning')}: ` +
+				`Class ${cls.name} might not have been deleted successfully (response: ${res}).`
 			);
 			const {name, groupID, classUUID} = clsGroupPair;
 			console.log(`[Function call: correctClass({${name}, ${groupID}, ${classUUID}})]`);
@@ -297,7 +302,8 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 			// If the response is not ClassUsersDeleted, print a warning
 			if(res != 'ClassUsersDeleted') {
 				console.log(
-					`Warning: Possible error after removing users from class '${cls.name}'. Response = '${res}'`
+					`${hf.toYellow('Warning')}: ` +
+					`Possible error after removing users from class '${cls.name}'. Response = '${res}'`
 				);
 				console.log(`[Function: correctClass]`);
 
@@ -315,7 +321,8 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 			// Print warning if response is unexpected
 			if(res != 'ClassSaved') {
 				console.log(
-					`Warning: Possible error after adding users to class '${cls.name}'. Response = '${res}'`
+					`${hf.toYellow('Warning')}: ` +
+					`Possible error after adding users to class '${cls.name}'. Response = '${res}'`
 				);
 				console.log(`[Function: correctClass]`);
 

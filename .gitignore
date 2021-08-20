@@ -1,6 +1,7 @@
 node_modules/
 *.js
 ./src/*.js
+./src/auth.ts
 .nvimlog
 ./src/.nvimlog
 .DS_Store
