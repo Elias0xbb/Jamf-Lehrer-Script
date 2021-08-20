@@ -55,7 +55,7 @@ async function main(): Promise<number> {
 		console.log(`Requesting classes and groups...`);
 		let groups = await getValidGroups();
 		let classes = await jac.getAllClasses();
-		console.log(hf.toCyan(`Received ${groups.length} class groups and ${classes.length} classes.`));
+		console.log(hf.toCyan(`Received ${groups.length} class groups and ${classes.length} classes.\n`));
 
 		// Create an array of group-class pairs
 		verbosePrint(`Creating class-group pair array...`);
@@ -65,7 +65,7 @@ async function main(): Promise<number> {
 		verbosePrint(`Deleting ${classes.length} classes...`, classes.length > 0);
 		let nDeletedClasses = 0;
 		for(const cls of classes) {
-			verbosePrint(`Deleting class ${cls.name}...`);
+			verbosePrint(`-> Deleting class '${cls.name}'...`);
 			nDeletedClasses++;
 			let res = await jac.deleteClass(cls.uuid);
 			// Display warning if response message isn't 'ClassDeleted'
@@ -73,11 +73,11 @@ async function main(): Promise<number> {
 				`${hf.toYellow('Warning')}: Received response ${res} while trying to delete class ${cls.name}`
 			);
 		}
-		console.log(`Deleted ${nDeletedClasses} classes.`);
 	
 		// Check all group-class pairs and create/correct missing/incorrect classes
 		await checkClassGroups(classGroupPairs);
 
+		console.log(hf.toMagenta(`Deleted ${nDeletedClasses} classes.\n`));
 		// TODO: Go through all classes and groups to check if everything is correct
 		
 		console.log(hf.toGreen('DONE!'));
@@ -268,7 +268,7 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 	isNewClass ||= nChangedTeachers > config.changedTeachersLimit;
 	
 	if(isNewClass) {
-		verbosePrint(`Rebuiling class ${cls.name}`);
+		verbosePrint(`Rebuilding class ${cls.name}`);
 		// Delete the old class
 		const res = await jac.deleteClass(cls.uuid);
 		// If the response is not 'ClassDeleted', print a warning
@@ -295,7 +295,8 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 		// Delete users if necessary
 		if(incStdIds.length + incTchIds.length > 0) {
 			verbosePrint(
-				`Removing ${incStdIds.length} students and ${incTchIds.length} teacher from class ${cls.name}`
+				`Removing ${incStdIds.length} student(s) and ` +
+				`${incTchIds.length} teacher(s) from class ${cls.name}`
 			);
 
 			let res = await jac.removeUsersFromClass(cls.uuid, incStdIds, incTchIds);
@@ -314,8 +315,8 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 		// Add missing users to the class if necessary
 		if(misStudents.length + misTeachers.length > 0) {
 			verbosePrint(
-				`Adding ${misStudents.length} students and ${misTeachers.length} ` +
-				`teachers to ${cls.name}`
+				`Adding ${misStudents.length} student(s) and ${misTeachers.length} ` +
+				`teacher(s) to ${cls.name}`
 			);
 			const res = await jac.addUsersToClass(cls.uuid, misStudents, misTeachers);
 			// Print warning if response is unexpected
