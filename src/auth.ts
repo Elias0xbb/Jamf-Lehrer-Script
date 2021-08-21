@@ -1,3 +1,3 @@
-const AUTH = 'NzA5ODQ3OTY6NVJTM0VTN0I4OUM0VTJBV0sxQjJSSDRBM0FRU1BXUTg=';
+const AUTH = '';
 
 module.exports = AUTH;
