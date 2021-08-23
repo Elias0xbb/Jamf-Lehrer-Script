@@ -79,15 +79,19 @@ async function main(): Promise<number> {
 
 		console.log(hf.toMagenta(`Deleted ${nDeletedClasses} classes.\n`));
 
-		// TODO: Go through all classes and groups to check if everything is correct
+		// Go through all classes and groups again to check for errors
 		console.log(`Verifying classes...`)
 		const nErrors = await verifyChanges();
 
+		// Print the number of errors that were found
 		if(nErrors > 0) {
 			console.log(hf.toRed(`${nErrors} errors found!`))
 		}
 		else console.log(hf.toGreen("Verification successful with 0 errors found!"));
 		
+		// TODO: fix errors
+
+		// Print message marking the end of the program
 		console.log(hf.toGreen('DONE!'));
 		// Return 0 if the execution was successful
 		return 0;
@@ -344,6 +348,9 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 	return nChangedStudents + nChangedTeachers;
 }
 
+/*-< verifyChanges() >-------------------------------------------+
+| Goes through all class-groups and classes to check for errors. |
++---------------------------------------------------------------*/
 async function verifyChanges(): Promise<number> {
 	// Stores the total number of errors
 	let nErrors = 0;

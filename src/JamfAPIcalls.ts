@@ -23,7 +23,7 @@ interface ClassArrayObject {
 	deviceGroupId: number,
 	deviceCount: number,
 	passcodeLockGracePeriod: object,
-	wallpaperId: number,
+	wallpaperId: number
 }
 
 // Object representing a class, returned by the 'find a class'
