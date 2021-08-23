@@ -4,6 +4,7 @@ import * as fs from 'fs';
 interface ConfigObject {
 	createdClassDescription: string,
 	classUserGroupRegEx: string,
+	authorization: string,
 	verboseMode: boolean,
 	minValidGroupCount: number,
 	teacherGroupID: number,
