@@ -148,6 +148,10 @@ async function deleteClass(uuid: string): Promise<string> {
 	process.exit(1)
 }
 
+async function testIfClassExists(name: string) {
+	const classes = await getAllClasses();
+	return classes.map(c => c.name).indexOf(name) > -1;
+}
 
 /*-< createClass(name, studentIDs, teacherIDs) >-----------------------------------------------------+
 | Creates a new class with the given name and members and returns the uuid.                          |
