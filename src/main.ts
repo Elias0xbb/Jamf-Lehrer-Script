@@ -73,7 +73,6 @@ async function main(): Promise<number> {
 
 
 
-
 // Call main function
 (async _ => {
 	const err = await main();
