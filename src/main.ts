@@ -78,7 +78,15 @@ async function main(): Promise<number> {
 		await checkClassGroups(classGroupPairs);
 
 		console.log(hf.toMagenta(`Deleted ${nDeletedClasses} classes.\n`));
+
 		// TODO: Go through all classes and groups to check if everything is correct
+		console.log(`Verifying classes...`)
+		const nErrors = await verifyChanges();
+
+		if(nErrors > 0) {
+			console.log(hf.toRed(`${nErrors} errors found!`))
+		}
+		else console.log(hf.toGreen("Verification successful with 0 errors found!"));
 		
 		console.log(hf.toGreen('DONE!'));
 		// Return 0 if the execution was successful
@@ -198,7 +206,7 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 			nCreatedClasses++;
 			// Get all group members and create the class
 			let group = await jac.getMembersOf(`${e.groupID}`);
-			createClassFromGroupMembers(e.name, group);
+			await createClassFromGroupMembers(e.name, group);
 			
 			verbosePrint(`Created new class '${e.name}'.`);
 		} 
@@ -216,6 +224,7 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 			));
 		}
 	}
+	console.log();
 	console.log(hf.toMagenta(`Created ${nCreatedClasses} missing classes.`));
 	console.log(hf.toMagenta(`Corrected ${nCorrectedClasses} classes.`));
 }
@@ -335,6 +344,58 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 	return nChangedStudents + nChangedTeachers;
 }
 
+async function verifyChanges(): Promise<number> {
+	// Stores the total number of errors
+	let nErrors = 0;
+	let nGrpsViewed = 0;
+	
+	// Get all classes and groups
+	const classes = await jac.getAllClasses();
+	const groups = await getValidGroups();
+	
+	const nGrpsTotal = groups.length;
+
+	// Find the class for every group and compare the two
+	for(const grp of groups) {
+		const pos = classes.map(c => c.name).indexOf(grp.name);
+		// Print an error if the class doesn't exist
+		if(pos < 0)  {
+			verbosePrint(`${hf.toRed('Error')}: Could not find class '${hf.toMagenta(grp.name)}'`);
+			nErrors++;
+			continue
+		}
+		// Compare group- to class members
+		const cls = await jac.getClass(classes[pos].uuid);
+		const grpMembers = await jac.getMembersOf(`${grp.id}`);
+		let clsMembers = [...cls.students, ...cls.teachers];
+
+		let nMissingGrpMembers = 0;
+		let nIncorrectClassMembers = 0;
+
+		// Find the corresponding class member for every group member
+		grpMembers.forEach(member => {
+			const idx = clsMembers.map(m => m.id).indexOf(member.id);
+			// If the class member exists, remove them from the clsMembers list, else inc. nMissingGrpMembers
+			idx < 0 ? nMissingGrpMembers++ : clsMembers.splice(idx, 1);
+		})
+		// All of the users that are still in clsMembers are not part of the group
+		nIncorrectClassMembers = clsMembers.length;
+		// Inc. nErrors if any members are missing / incorrect
+		if(nIncorrectClassMembers + nMissingGrpMembers > 0) {
+			nErrors++;
+			let errMsg = nIncorrectClassMembers === 0 ? '' : `${nIncorrectClassMembers} incorrect ` +
+				`${nMissingGrpMembers > 0 ? 'and ' : 'members'}`;
+			if(nMissingGrpMembers > 0) errMsg += `${nMissingGrpMembers} missing users`
+			verbosePrint(`${hf.toRed('Error')}: ${errMsg} in class ${hf.toYellow(cls.name)}`);
+		}
+
+		nGrpsViewed++;
+		const pc = Math.ceil(nGrpsViewed / nGrpsTotal * 100);
+		if(pc % 10 === 0) console.log(hf.toBlue(`Verification progress: ${pc}%`));
+	}
+
+	return nErrors;
+}
 
 // Call main function
 (async _ => {

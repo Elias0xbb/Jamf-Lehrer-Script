@@ -23,7 +23,7 @@ interface ClassArrayObject {
 	deviceGroupId: number,
 	deviceCount: number,
 	passcodeLockGracePeriod: object,
-	wallpaperId: number
+	wallpaperId: number,
 }
 
 // Object representing a class, returned by the 'find a class'
@@ -89,7 +89,7 @@ async function getAllClasses(): Promise<ClassArrayObject[]> {
 	for(let i = 0; i < 5; ++i) {
 		try {
 			// Send API request for all classes
-			let clss = <{classes: any}> await sendRequest('/classes', 'GET', null);
+			let clss = <{classes: ClassArrayObject[]}> await sendRequest('/classes', 'GET', null);
 
 			// If the returned value or its 'classes' property is not defined, throw an error
 			if(!clss) throw new Error(`Undefined response [Function call: getAllClasses()].`);
