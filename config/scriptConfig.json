@@ -6,5 +6,7 @@
 	"teacherGroupID": 3210,
 	"changedStudentsLimit": 8,
 	"changedTeachersLimit": 1,
-	"coloredConsoleOutputs": true
+	"coloredConsoleOutputs": true,
+	"progressBarWidth": 32,
+	"progressBarOffset": ""
 }

@@ -2,6 +2,8 @@
 import {getConfig} from './getConfig';
 // Https wrapper functions
 import * as jac from './JamfAPIcalls';
+// Progress bar
+import {displayProgressBar} from './ProgressBar';
 
 // Get config object
 const config = (_ => {
@@ -52,6 +54,7 @@ interface GroupClassPairObject { name: string, groupID: number, classUUID: strin
 | only the group id and name will be stored and the class uuid will be undefined.   |
 +----------------------------------------------------------------------------------*/
 function combineGroupsAndClasses(groups: {name: string, id: number}[], classes: jac.ClassArrayObject[]) {
+	console.log(toCyan('\nFinding group-class pairs...'));
 	// The groupsClasses array stores the group-class pairs
 	let groupsClasses: GroupClassPairObject[] = [];
 	// getClass(name) returns and removes the first class with the given name
@@ -62,13 +65,14 @@ function combineGroupsAndClasses(groups: {name: string, id: number}[], classes: 
 	});
 
 	// Find the respective class for every group and return the array
-	groups.forEach(g => {
+	groups.forEach((g, idx) => {
 		let cls = getClass(g.name);
 		groupsClasses.push({
 			name: g.name,
 			groupID: g.id,
 			classUUID: cls?.uuid,
 		})
+		displayProgressBar((++idx)/groups.length, true, '.');
 	})
 
 	return groupsClasses;
@@ -137,13 +141,12 @@ async function createClassFromGroupMembers(clsName: string, members: jac.Detaile
 | if necessary.                                                                        |
 +-------------------------------------------------------------------------------------*/
 async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
+	console.log(toCyan('\n\nChecking and correcting all classes...'));
+	
 	// Loop over the group-class pair array
 	let viewedClasses = 0;     // # of classes that have been checked in total
 	let nCorrectedClasses = 0; // # of classes that had to be corrected due to missing / incorrect members
 	let nCreatedClasses = 0;   // # of classes that were missing and thus had to be created 
-
-	// Calculate 10% of the total number of classes/groups for the progress bar
-	let tenPercentOfCG = Math.ceil(grpClsArray.length / 10);
 
 	for(const e of grpClsArray) {
 		// Create a new class if none exists
@@ -162,15 +165,10 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 		}
 		
 		viewedClasses++;
-		if(viewedClasses % tenPercentOfCG === 0) {
-			console.log(toBlue(
-				`Viewed ${viewedClasses} / ${grpClsArray.length} classes ` +
-				`(${Math.floor(viewedClasses/grpClsArray.length * 100)}%)`
-			));
-		}
+		displayProgressBar(viewedClasses / grpClsArray.length, true, '#');
 	}
-	console.log();
-	console.log(toMagenta(`Created ${nCreatedClasses} missing classes.`));
+
+	console.log(toMagenta(`\n\nCreated ${nCreatedClasses} missing classes.`));
 	console.log(toMagenta(`Corrected ${nCorrectedClasses} classes.`));
 }
 
@@ -301,6 +299,8 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 | Goes through all class-groups and classes to check for errors. |
 +---------------------------------------------------------------*/
 async function verifyChanges(): Promise<number> {
+	console.log(toYellow('\n\nVerifying Changes...'));
+
 	// Stores the total number of errors
 	let nErrors = 0;
 	let nGrpsViewed = 0;
@@ -348,8 +348,7 @@ async function verifyChanges(): Promise<number> {
 		}
 
 		nGrpsViewed++;
-		const pc = Math.ceil(nGrpsViewed / nGrpsTotal * 100);
-		if(pc % 10 === 0) console.log(toBlue(`Verification progress: ${pc}%`));
+		displayProgressBar(nGrpsViewed / nGrpsTotal, true, '=');
 	}
 
 	return nErrors;

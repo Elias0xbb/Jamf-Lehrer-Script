@@ -10,6 +10,8 @@ interface ConfigObject {
 	changedStudentsLimit: number,
 	changedTeachersLimit: number,
 	coloredConsoleOutputs: boolean,
+	progressBarWidth: number,
+	progressBarOffset: string,
 }
 // Relative path to the script configuration file. Default path: ../config/scriptConfig.json
 const CONFIG_PATH = '../config/scriptConfig.json';
