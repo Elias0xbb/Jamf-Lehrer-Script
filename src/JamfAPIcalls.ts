@@ -164,22 +164,29 @@ async function createClass(name: string, studentIDs: string[], teacherIDs: strin
 		try {
 			// Return Null and print a warning if the name is invalid
 			if(!name) {
-				console.log(`Failed to create new class {name missing} [Function: createClass].`);
+				//TODO: migrate to log file
+				//console.log(`Failed to create new class {name missing} [Function: createClass].`);
 				return null;
 			}
 			// TODO: Check validity (RegEx)
 			if(name == '') {
+				/*
+				 * TODO: migrate to log file
 				console.log(`Failed to create new class {Invalid name '${name}'} [Function call: 
 					createClass(name: ${name}, studentIDs: ${studentIDs}, teacherIDs: ${teacherIDs})]`);
+				*/
 				return null;
 			}
 
 			// Log a warning if teacherIDs and/or studentIDs is empty. No error will be thrown and the execution
 			// of the function will continue
+			/*
+			 * TODO: migrate to log file
 			if(teacherIDs.length === 0) console.log(`${hf.toYellow('Warning')}: ` +
 				`Created new class "${name}" without any teachers!`);
 			if(studentIDs.length === 0) console.log(`${hf.toYellow('Warning')}: ` +
 				`Created new class "${name}" without any students!`);
+			*/
 
 			// Make the API request with the given parameters and the description specified in scriptConfig.json
 			const descr = getConfig().createdClassDescription;
@@ -311,7 +318,8 @@ async function removeUsersFromClass(uuid: string, studentIDs: string[], teacherI
 
 			// If both studentIDs and teacherIDs are empty, display warning and return null
 			if(studentIDs.length + teacherIDs.length === 0) {
-				console.log(`${hf.toYellow('Warning')}: Tried to remove 0 users from class ${uuid}`);
+				//TODO: migrate to log file
+				//console.log(`${hf.toYellow('Warning')}: Tried to remove 0 users from class ${uuid}`);
 				return null;
 			}
 

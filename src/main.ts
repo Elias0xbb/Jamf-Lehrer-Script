@@ -5,6 +5,8 @@ import * as jac from './JamfAPIcalls';
 import * as hf from './helperFunctions';
 // config file
 import {config} from './helperFunctions';
+// Progress bar
+import * as progBar from './ProgressBar';
 
 // Prints a message if verbose mode is active TODO: remove and add debug log
 function verbosePrint(message: any, condition: boolean = true) {
@@ -19,27 +21,34 @@ function verbosePrint(message: any, condition: boolean = true) {
 +-------------------------------------------------------------------------------*/
 async function main(): Promise<number> {
 	try {
+		// Init the progress bar
+		progBar.initProgressBar(config.progressBarWidth, config.progressBarOffset);
+
 		// Get all classes and relevant groups
-		console.log(`Requesting classes and groups...`);
+		console.log(hf.toGreen(`Requesting classes and groups...`));
 		let groups = await hf.getValidGroups();
 		let classes = await jac.getAllClasses();
-		console.log(hf.toCyan(`Received ${groups.length} class groups and ${classes.length} classes.\n`));
+		console.log(hf.toCyan(`Received ${groups.length} class groups and ${classes.length} classes.`));
 
 		// Create an array of group-class pairs
-		verbosePrint(`Creating class-group pair array...`);
 		let classGroupPairs = hf.combineGroupsAndClasses(groups, classes);
 
 		// Delete all classes that shouldn't exist
-		verbosePrint(`Deleting ${classes.length} classes...`, classes.length > 0);
+		const nClassesToDelete = classes.length;
 		let nDeletedClasses = 0;
+		if(classes.length > 0) console.log(`Deleting ${nClassesToDelete} classes...`);
+
 		for(const cls of classes) {
-			verbosePrint(`-> Deleting class '${cls.name}'...`);
+			//verbosePrint(`-> Deleting class '${cls.name}'...`);
 			nDeletedClasses++;
 			let res = await jac.deleteClass(cls.uuid);
 			// Display warning if response message isn't 'ClassDeleted'
+			// TODO: remove warning
 			if(res != 'ClassDeleted') console.log(
 				`${hf.toYellow('Warning')}: Received response ${res} while trying to delete class ${cls.name}`
 			);
+
+			progBar.displayProgressBar(nDeletedClasses / nClassesToDelete, true, '*');
 		}
 	
 		// Check all group-class pairs and create/correct missing/incorrect classes
