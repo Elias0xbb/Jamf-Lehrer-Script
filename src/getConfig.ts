@@ -13,6 +13,12 @@ interface ConfigObject {
 	coloredConsoleOutputs: boolean,
 	progressBarWidth: number,
 	progressBarOffset: string,
+	logFileConfig: {
+		enableLogFile: boolean,
+		logFilePath: string,
+		logFileName: string,
+		autoClear: boolean,
+	}
 }
 // Relative path to the script configuration file. Default path: ../config/scriptConfig.json
 const CONFIG_PATH = '../config/scriptConfig.json';

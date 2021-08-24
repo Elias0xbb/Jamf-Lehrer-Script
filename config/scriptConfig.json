@@ -9,5 +9,12 @@
 	"changedTeachersLimit": 1,
 	"coloredConsoleOutputs": true,
 	"progressBarWidth": 32,
-	"progressBarOffset": ""
+	"progressBarOffset": "",
+
+	"logFileConfig": {
+		"enableLogFile": true,
+		"logFilePath": "../logFiles",
+		"logFileName": "",
+		"autoClear": false
+	}
 }
