@@ -1,8 +1,9 @@
 
-import {config} from './helperFunctions';
+import {getConfig} from './getConfig';
 import * as fs from 'fs';
 
 
+const config = getConfig();
 // Buffer to store text in. Will be appended to the log file when writeLogFile is called
 var logBuffer = '';
 
@@ -11,8 +12,8 @@ const pathToLogFile = (() => {
 	let path = config.logFileConfig.dirPath;
 	if(!'/\\'.includes(path.charAt(path.length - 1))) path += '/';
 
-	path += config.logFileConfig.logFileName ?? '' === ''
-		? `log-${Date()}`
+	path += (config.logFileConfig.logFileName ?? '') === ''
+		? `log-${Date()}.txt`
 		: config.logFileConfig.logFileName;
 	return path;
 })();
@@ -37,8 +38,13 @@ function appendToBuffer(msg: string, condition = true) {
 
 // Append logBuffer to the log File
 function writeLogFile() {
-	if(!config.logFileConfig.enableLogFile) return;
-	fs.appendFile(pathToLogFile, logBuffer, err => console.error(err));
+	if(!config.logFileConfig.enableLogFile) return Promise.resolve('Log file disabled');
+	console.log('Writing log file...');
+	return new Promise((resolve, reject) => {
+		fs.appendFile(pathToLogFile, logBuffer, err => {
+			err ? reject(err) : resolve('success');
+		});
+	})
 }
 
 

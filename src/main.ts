@@ -7,11 +7,9 @@ import * as hf from './helperFunctions';
 import {config} from './helperFunctions';
 // Progress bar
 import * as progBar from './ProgressBar';
+// Log File
+import * as logFile from './logFile';
 
-// Prints a message if verbose mode is active TODO: remove and add debug log
-function verbosePrint(message: any, condition: boolean = true) {
-	if(config.verboseMode && condition) console.log(message);
-}
 
 
 /*-< main() >--------------------------------------------------------------------+
@@ -39,13 +37,14 @@ async function main(): Promise<number> {
 		if(classes.length > 0) console.log(`Deleting ${nClassesToDelete} classes...`);
 
 		for(const cls of classes) {
-			//verbosePrint(`-> Deleting class '${cls.name}'...`);
+			logFile.appendToBuffer(`-> Deleting class '${cls.name}'...`);
+
 			nDeletedClasses++;
 			let res = await jac.deleteClass(cls.uuid);
 			// Display warning if response message isn't 'ClassDeleted'
-			// TODO: remove warning
-			if(res != 'ClassDeleted') console.log(
-				`${hf.toYellow('Warning')}: Received response ${res} while trying to delete class ${cls.name}`
+			// TODO: Collect warnings and report after program finishes
+			if(res != 'ClassDeleted') logFile.appendToBuffer(
+				`Warning': Received response ${res} while trying to delete class ${cls.name}`
 			);
 
 			progBar.displayProgressBar(nDeletedClasses / nClassesToDelete, true, '*');
@@ -54,17 +53,16 @@ async function main(): Promise<number> {
 		// Check all group-class pairs and create/correct missing/incorrect classes
 		await hf.checkClassGroups(classGroupPairs);
 
-		console.log(hf.toMagenta(`Deleted ${nDeletedClasses} classes.\n`));
+		console.log(hf.toMagenta(`Deleted ${nDeletedClasses} classes.`));
 
 		// Go through all classes and groups again to check for errors
-		console.log(`Verifying classes...`)
 		const nErrors = await hf.verifyChanges();
 
 		// Print the number of errors that were found
 		if(nErrors > 0) {
 			console.log(hf.toRed(`${nErrors} errors found!`))
 		}
-		else console.log(hf.toGreen("Verification successful with 0 errors found!"));
+		else console.log(hf.toGreen("\nVerification successful with 0 errors found!\n"));
 		
 		// TODO: fix errors
 
@@ -85,5 +83,6 @@ async function main(): Promise<number> {
 // Call main function
 (async _ => {
 	const err = await main();
+	await logFile.writeLogFile();
 	process.exit(err);
 })()

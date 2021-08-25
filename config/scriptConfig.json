@@ -3,7 +3,7 @@
 	"classUserGroupRegEx": "^(k|q|j|(ib)|(gt))\\d{1,2}\\w*\\d*.\\w+\\d*\\s*$",
 	"authorization": "",
 	"verboseMode": true,
-	"minValidGroupCount": 300,
+	"minValidGroupCount": 1,
 	"teacherGroupID": 3210,
 	"changedStudentsLimit": 8,
 	"changedTeachersLimit": 1,
@@ -14,7 +14,7 @@
 	"logFileConfig": {
 		"enableLogFile": true,
 		"dirPath": "../logFiles",
-		"logFileName": "",
-		"autoClear": false
+		"logFileName": "log.txt",
+		"autoClear": true
 	}
 }
