@@ -196,7 +196,7 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 
 	// Check if the class changed and return if not
 	const nChangedStudents = misStudents.length + cls.students.length;
-	const nChangedTeachers = misTeachers.length = cls.teachers.length; 
+	const nChangedTeachers = misTeachers.length + cls.teachers.length; 
 
 	if(nChangedStudents + nChangedTeachers <= 0) return 0;
 	
