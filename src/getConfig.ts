@@ -15,7 +15,7 @@ interface ConfigObject {
 	progressBarOffset: string,
 	logFileConfig: {
 		enableLogFile: boolean,
-		logFilePath: string,
+		dirPath: string,
 		logFileName: string,
 		autoClear: boolean,
 	}

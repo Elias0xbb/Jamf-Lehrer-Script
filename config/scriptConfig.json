@@ -13,7 +13,7 @@
 
 	"logFileConfig": {
 		"enableLogFile": true,
-		"logFilePath": "../logFiles",
+		"dirPath": "../logFiles",
 		"logFileName": "",
 		"autoClear": false
 	}
