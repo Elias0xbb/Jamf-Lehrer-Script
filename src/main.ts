@@ -60,7 +60,7 @@ async function main(): Promise<number> {
 
 		// Print the number of errors that were found
 		if(nErrors > 0) {
-			console.log(hf.toRed(`${nErrors} errors found!\n`))
+			console.log(hf.toRed(`\n${nErrors} errors found!\n`))
 		}
 		else console.log(hf.toGreen("\nVerification successful with 0 errors found!\n"));
 		

@@ -115,7 +115,8 @@ async function createClassFromGroupMembers(clsName: string,
 	});
 
 	// Create the new class
-	await jac.createClass(clsName, students, teachers);
+	const res = await jac.createClass(clsName, students, teachers);
+	return res;
 }
 
 /*-< checkClassGroups(grpClsArray) >---------------------------------------------------+
@@ -127,8 +128,6 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 	console.log(toCyan('\n\nChecking and correcting all classes...'));
 	
 	let viewedClasses = 0;     // # of classes that have been checked in total
-	let nCorrectedClasses = 0; // # of classes that had to be corrected due to missing / incorrect members
-	let nCreatedClasses = 0;   // # of classes that were missing and thus had to be created 
 
 	// Get the id of the teacher group
 	const teacherGroupID = await (async () => {
@@ -144,28 +143,40 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 	})()
 
 	// Loop over the group-class pair array
+	let classDeletions: Promise<string>[] = [];
+	let classCorrections: Promise<number>[] = [];
+
 	for(const e of grpClsArray) {
 		// Create a new class if none exists
 		if(!e.classUUID) {
-			nCreatedClasses++;
 			// Get all group members and create the class
 			let group = await jac.getMembersOf(`${e.groupID}`);
-			await createClassFromGroupMembers(e.name, group, teacherGroupID);
+			classDeletions.push(createClassFromGroupMembers(e.name, group, teacherGroupID));
 			
 			logFile.appendToBuffer(`Created new class '${e.name}'.`);
 		} 
 		// Check class to see if the students and teachers match the corresponding group's members
 		else {
-			const corrections = await correctClass(e, teacherGroupID);
-			if(corrections > 0) nCorrectedClasses++;
+			classCorrections.push(correctClass(e, teacherGroupID));
+			//if(corrections > 0) nCorrectedClasses++;
 		}
 		
 		viewedClasses++;
 		displayProgressBar(viewedClasses / grpClsArray.length, true, '#');
 	}
 
-	console.log(toMagenta(`\n\nCreated ${nCreatedClasses} missing classes.`));
+	console.log('\n');
+	// Print information on how many classes have been deleted...
+	const deleteMessages = await Promise.all(classDeletions);
+	console.log(toMagenta(`Created ${deleteMessages.length} missing classes.`));
+
+	// ...and how many classes have been changed
+	let nCorrectedClasses = 0;
+	const clsChanges = await Promise.all(classCorrections);
+	// Inc. nCorrectedClasses if at least one change has been made to a class
+	clsChanges.forEach(c => { if(c > 0) nCorrectedClasses++ });
 	console.log(toMagenta(`Corrected ${nCorrectedClasses} classes.`));
+
 }
 
 /*-< correctClass(clsGroupPair, teacherGroupID) >--------------------------+
@@ -302,21 +313,45 @@ async function verifyChanges(): Promise<number> {
 	const classes = await jac.getAllClasses();
 	const groups = await getValidGroups();
 	
+	// Create class-group pairs
+	const clsGrpPairs = await (async () => {
+		let detailedClasses: Promise<jac.DetailedClassObject>[] = [];
+		let grpMembers: Promise<jac.DetailedUserObject[]>[] = [];
+		
+		classes.forEach(cls => detailedClasses.push(jac.getClass(cls.uuid)));
+		groups.forEach(g => grpMembers.push(jac.getMembersOf(`${g.id}`)));
+
+		const detClasses = await Promise.all(detailedClasses);
+		const detGrpMembers = await Promise.all(grpMembers);
+		const grps = detGrpMembers.map((members, idx) => {
+			return { name: groups[idx].name, id: groups[idx].id, members: members };
+		});
+
+		return grps.map(grp => {
+			const pos = detClasses.map(c => c.name).indexOf(grp.name);
+			// if the class exists, store it in the new array, else store undefined
+			const cls = pos > -1 ? detClasses[pos] : void 0;
+			return {
+				name: grp.name,
+				groupID: grp.id,
+				grpMembers: grp.members,
+				cls: cls,
+			}
+		})
+	})();
+	
 	const nGrpsTotal = groups.length;
 
 	// Find the class for every group and compare the two
-	for(const grp of groups) {
-		const pos = classes.map(c => c.name).indexOf(grp.name);
-		// Print an error if the class doesn't exist
-		if(pos < 0)  {
-			logFile.appendToBuffer(`Error: Could not find class '${grp.name}'`);
+	for(const clsGrpPair of clsGrpPairs) {
+		if(!clsGrpPair.cls)  {
+			logFile.appendToBuffer(`Error: Could not find class '${clsGrpPair.name}'`);
 			nErrors++;
 			continue
 		}
 		// Compare group- to class members
-		const cls = await jac.getClass(classes[pos].uuid);
-		const grpMembers = await jac.getMembersOf(`${grp.id}`);
-		let clsMembers = [...cls.students, ...cls.teachers];
+		const grpMembers = clsGrpPair.grpMembers;
+		let clsMembers = [...clsGrpPair.cls.students, ...clsGrpPair.cls.teachers];
 
 		let nMissingGrpMembers = 0;
 		let nIncorrectClassMembers = 0;
@@ -335,7 +370,7 @@ async function verifyChanges(): Promise<number> {
 			let errMsg = nIncorrectClassMembers === 0 ? '' : `${nIncorrectClassMembers} incorrect ` +
 				`${nMissingGrpMembers > 0 ? 'and ' : 'members'}`;
 			if(nMissingGrpMembers > 0) errMsg += `${nMissingGrpMembers} missing users`
-			logFile.appendToBuffer(`Error: ${errMsg} in class ${cls.name}`);
+			logFile.appendToBuffer(`Error: ${errMsg} in class ${clsGrpPair.name}`);
 		}
 
 		nGrpsViewed++;
