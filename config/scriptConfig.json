@@ -5,6 +5,7 @@
 	"verboseMode": true,
 	"minValidGroupCount": 250,
 	"teacherGroupName": "schueler",
+	"teacherGroupName": "lehrer",
 	"teacherGroupID": 11818,
 	"changedStudentsLimit": 8,
 	"changedTeachersLimit": 1,
