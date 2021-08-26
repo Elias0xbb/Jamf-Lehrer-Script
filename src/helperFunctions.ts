@@ -4,34 +4,15 @@ import {getConfig} from './getConfig';
 import * as jac from './JamfAPIcalls';
 // Progress bar
 import {displayProgressBar} from './ProgressBar';
+// Log File
+import * as logFile from './logFile';
 
 // Get config object
 const config = (_ => {
 	let config = getConfig();
 	// Check and return the config
-	if(config) {
-		if(!config.classUserGroupRegEx) {
-			console.log('config.classUserGroupRegEx undefined!');
-			process.exit(1);
-		}
-		if(config.teacherGroupID == null) {
-			console.log('config.teacherGroupID undefined!');
-			process.exit(1);
-		}
-		if(!config.createdClassDescription) {
-			console.log('config.createdClassDescription undefined!');
-			process.exit(1);
-		}
-		if(config.verboseMode == null) {
-			console.log('config.verboseMode undefined!');
-			process.exit(1);
-		}
-		if(config.minValidGroupCount == null) {
-			console.log('config.minValidGroupCount undefined!');
-			process.exit(1);
-		}
-		return config;
-	}
+	if(config) return config;
+
 	console.log(`${toRed('Error')}: Console object undefined!`);
 	process.exit(1);
 })();
@@ -156,7 +137,7 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 			let group = await jac.getMembersOf(`${e.groupID}`);
 			await createClassFromGroupMembers(e.name, group);
 			
-			//verbosePrint(`Created new class '${e.name}'.`);
+			logFile.appendToBuffer(`Created new class '${e.name}'.`);
 		} 
 		// Check class to see if the students and teachers match the corresponding group's members
 		else {
@@ -215,7 +196,7 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 
 	// Check if the class changed and return if not
 	const nChangedStudents = misStudents.length + cls.students.length;
-	const nChangedTeachers = misTeachers.length = cls.teachers.length; 
+	const nChangedTeachers = misTeachers.length + cls.teachers.length; 
 
 	if(nChangedStudents + nChangedTeachers <= 0) return 0;
 	
@@ -224,7 +205,7 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 	isNewClass ||= nChangedTeachers > config.changedTeachersLimit;
 	
 	if(isNewClass) {
-		//verbosePrint(`Rebuilding class ${cls.name}`);
+		logFile.appendToBuffer(`Rebuilding class ${cls.name}`);
 		// Delete the old class
 		const res = await jac.deleteClass(cls.uuid);
 		// If the response is not 'ClassDeleted', print a warning
@@ -250,12 +231,10 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 		
 		// Delete users if necessary
 		if(incStdIds.length + incTchIds.length > 0) {
-			/*
-			verbosePrint(
+			logFile.appendToBuffer(
 				`Removing ${incStdIds.length} student(s) and ` +
 				`${incTchIds.length} teacher(s) from class ${cls.name}`
 			);
-			*/
 
 			let res = await jac.removeUsersFromClass(cls.uuid, incStdIds, incTchIds);
 			// If the response is not ClassUsersDeleted, print a warning
@@ -272,17 +251,16 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 
 		// Add missing users to the class if necessary
 		if(misStudents.length + misTeachers.length > 0) {
-			/*
-			verbosePrint(
+			logFile.appendToBuffer(
 				`Adding ${misStudents.length} student(s) and ${misTeachers.length} ` +
 				`teacher(s) to ${cls.name}`
 			);
-			*/
 			const res = await jac.addUsersToClass(cls.uuid, misStudents, misTeachers);
 			// Print warning if response is unexpected
 			if(res != 'ClassSaved') {
-				console.log(
-					`${toYellow('Warning')}: ` +
+				// TODO: Report warning after program finishes
+				logFile.appendToBuffer(
+					`Warning: ` +
 					`Possible error after adding users to class '${cls.name}'. Response = '${res}'`
 				);
 				console.log(`[Function: correctClass]`);
@@ -316,7 +294,7 @@ async function verifyChanges(): Promise<number> {
 		const pos = classes.map(c => c.name).indexOf(grp.name);
 		// Print an error if the class doesn't exist
 		if(pos < 0)  {
-			//verbosePrint(`${hf.toRed('Error')}: Could not find class '${hf.toMagenta(grp.name)}'`);
+			logFile.appendToBuffer(`Error: Could not find class '${grp.name}'`);
 			nErrors++;
 			continue
 		}
@@ -339,12 +317,10 @@ async function verifyChanges(): Promise<number> {
 		// Inc. nErrors if any members are missing / incorrect
 		if(nIncorrectClassMembers + nMissingGrpMembers > 0) {
 			nErrors++;
-			/*
 			let errMsg = nIncorrectClassMembers === 0 ? '' : `${nIncorrectClassMembers} incorrect ` +
 				`${nMissingGrpMembers > 0 ? 'and ' : 'members'}`;
 			if(nMissingGrpMembers > 0) errMsg += `${nMissingGrpMembers} missing users`
-			verbosePrint(`${hf.toRed('Error')}: ${errMsg} in class ${hf.toYellow(cls.name)}`);
-			*/
+			logFile.appendToBuffer(`Error: ${errMsg} in class ${cls.name}`);
 		}
 
 		nGrpsViewed++;
