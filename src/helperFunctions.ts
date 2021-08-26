@@ -167,33 +167,14 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 
 	console.log('\n');
 	// Print information on how many classes have been deleted...
-	// TODO: add comments
-	let nDelClasses = 0;
-	if(classDeletions.length > 0) {
-		nDelClasses = <number> await (() => {
-			return new Promise((resolve, reject) => {
-				Promise.all(classDeletions)
-					.then(messages => resolve(messages.length))
-					.catch(reject);
-			});
-		})();
-	}
-	console.log(toMagenta(`Created ${nDelClasses} missing classes.`));
+	const deleteMessages = await Promise.all(classDeletions);
+	console.log(toMagenta(`Created ${deleteMessages.length} missing classes.`));
+
 	// ...and how many classes have been changed
-	// TODO: add comments
 	let nCorrectedClasses = 0;
-	if(classCorrections.length > 0) {
-		nCorrectedClasses = <number> await (() => {
-			return new Promise((resolve, reject) => {
-				Promise.all(classCorrections).then(changes => {
-					let nCorrectedClasses = 0;
-					changes.forEach(c => { if(c > 0) nCorrectedClasses++ });
-					resolve(nCorrectedClasses);
-				})
-				.catch(reject);
-			});
-		})();
-	}
+	const clsChanges = await Promise.all(classCorrections);
+	// Inc. nCorrectedClasses if at least one change has been made to a class
+	clsChanges.forEach(c => { if(c > 0) nCorrectedClasses++ });
 	console.log(toMagenta(`Corrected ${nCorrectedClasses} classes.`));
 
 }
