@@ -99,13 +99,15 @@ async function getValidGroups(): Promise<{name: string, id: number}[]> {
 /*-< createClassFromGroupMembers(clsName, members) >-+
 | Creates a new class from an array of user objects. |
 +---------------------------------------------------*/
-async function createClassFromGroupMembers(clsName: string, members: jac.DetailedUserObject[]) {
+async function createClassFromGroupMembers(clsName: string, 
+										   members: jac.DetailedUserObject[], 
+										   teacherGroupID: number) {
 	// Get the id of every teacher and student
 	let teachers: string[] = [];
 	let students: string[] = [];
 
 	members.forEach(user => {
-		let isTeacher = user.groupIds.indexOf(config.teacherGroupID) > -1;
+		let isTeacher = user.groupIds.indexOf(teacherGroupID) > -1;
 		// If the user is part of the teachers group, add them to the teachers array
 		if(isTeacher) teachers.push(`${user.id}`);
 		// Otherwise add the user to the students array
@@ -116,7 +118,7 @@ async function createClassFromGroupMembers(clsName: string, members: jac.Detaile
 	await jac.createClass(clsName, students, teachers);
 }
 
-/*-< checkClassGroups(grpClsArray, teacherGroupID) >-----------------------------------+
+/*-< checkClassGroups(grpClsArray) >---------------------------------------------------+
 | Checks if a corresponding class exists for every group and if the class has the same |
 | members as the group. Creates all missing classes and adds / removes class members   |
 | if necessary.                                                                        |
@@ -124,24 +126,37 @@ async function createClassFromGroupMembers(clsName: string, members: jac.Detaile
 async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 	console.log(toCyan('\n\nChecking and correcting all classes...'));
 	
-	// Loop over the group-class pair array
 	let viewedClasses = 0;     // # of classes that have been checked in total
 	let nCorrectedClasses = 0; // # of classes that had to be corrected due to missing / incorrect members
 	let nCreatedClasses = 0;   // # of classes that were missing and thus had to be created 
 
+	// Get the id of the teacher group
+	const teacherGroupID = await (async () => {
+		const groups = await jac.getAllGroups();
+		const pos = groups.map(g => g.name).indexOf(config.teacherGroupName);
+		if(pos < 0) {
+			console.log(toRed('WARNING: ') + `Teacher group '${config.teacherGroupName}' not found!`);
+			logFile.appendToBuffer(
+				`\nWarning: Teacher group '${config.teacherGroupName}' not found!\n`);
+			return config.teacherGroupID;
+		}
+		return groups[pos].id;
+	})()
+
+	// Loop over the group-class pair array
 	for(const e of grpClsArray) {
 		// Create a new class if none exists
 		if(!e.classUUID) {
 			nCreatedClasses++;
 			// Get all group members and create the class
 			let group = await jac.getMembersOf(`${e.groupID}`);
-			await createClassFromGroupMembers(e.name, group);
+			await createClassFromGroupMembers(e.name, group, teacherGroupID);
 			
 			logFile.appendToBuffer(`Created new class '${e.name}'.`);
 		} 
 		// Check class to see if the students and teachers match the corresponding group's members
 		else {
-			const corrections = await correctClass(e);
+			const corrections = await correctClass(e, teacherGroupID);
 			if(corrections > 0) nCorrectedClasses++;
 		}
 		
@@ -153,11 +168,11 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 	console.log(toMagenta(`Corrected ${nCorrectedClasses} classes.`));
 }
 
-/*-< correctClass(clsGroupPair) >------------------------------------------+
+/*-< correctClass(clsGroupPair, teacherGroupID) >--------------------------+
 | Compares the class to its corresponding group and deletes / adds members |
 | or rebuilds the class if necessary.                                      |
 +-------------------------------------------------------------------------*/
-async function correctClass(clsGroupPair: GroupClassPairObject) {
+async function correctClass(clsGroupPair: GroupClassPairObject, teacherGroupID: number) {
 	// Get detailed information on the class and the group
 	const cls = await jac.getClass(clsGroupPair.classUUID);
 	const grpUsers = await jac.getMembersOf(`${clsGroupPair.groupID}`);
@@ -179,7 +194,7 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 
 	for(const usr of grpUsers) {
 		// Check if the user is a teacher
-		const isTeacher = usr.groupIds.indexOf(config.teacherGroupID) > -1;
+		const isTeacher = usr.groupIds.indexOf(teacherGroupID) > -1;
 		// If the user is a teacher, search the teachers array of cls to see if their id is included
 		if(isTeacher) {
 			const teacher = findUser(cls.teachers, usr.id);
@@ -221,7 +236,7 @@ async function correctClass(clsGroupPair: GroupClassPairObject) {
 		}
 
 		// Create a new class
-		await createClassFromGroupMembers(cls.name, grpUsers);
+		await createClassFromGroupMembers(cls.name, grpUsers, teacherGroupID);
 	}
 	// If it is not a new class, correct users if necessary
 	else {

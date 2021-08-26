@@ -7,6 +7,7 @@ interface ConfigObject {
 	authorization: string,
 	verboseMode: boolean,
 	minValidGroupCount: number,
+	teacherGroupName: string,
 	teacherGroupID: number,
 	changedStudentsLimit: number,
 	changedTeachersLimit: number,
