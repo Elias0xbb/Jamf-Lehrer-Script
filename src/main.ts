@@ -53,14 +53,14 @@ async function main(): Promise<number> {
 		// Check all group-class pairs and create/correct missing/incorrect classes
 		await hf.checkClassGroups(classGroupPairs);
 
-		console.log(hf.toMagenta(`Deleted ${nDeletedClasses} classes.`));
+		console.log(hf.toMagenta(`Deleted ${nDeletedClasses} classes.\n`));
 
 		// Go through all classes and groups again to check for errors
 		const nErrors = await hf.verifyChanges();
 
 		// Print the number of errors that were found
 		if(nErrors > 0) {
-			console.log(hf.toRed(`${nErrors} errors found!`))
+			console.log(hf.toRed(`${nErrors} errors found!\n`))
 		}
 		else console.log(hf.toGreen("\nVerification successful with 0 errors found!\n"));
 		
