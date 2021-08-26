@@ -4,7 +4,7 @@
 	"authorization": "",
 	"verboseMode": true,
 	"minValidGroupCount": 250,
-	"teacherGroupName": "lehrer",
+	"teacherGroupName": "schueler",
 	"teacherGroupID": 11818,
 	"changedStudentsLimit": 8,
 	"changedTeachersLimit": 1,
