@@ -177,6 +177,10 @@ async function createClass(name: string, studentIDs: string[], teacherIDs: strin
 
 			// Log a warning if teacherIDs and/or studentIDs is empty. No error will be thrown and the execution
 			// of the function will continue
+			if(teacherIDs.length + studentIDs.length === 0) {
+				logFile.appendToBuffer(`Warning: Failed to create new class '${name}'. Reason: No members`);
+				return null;
+			}
 			if(teacherIDs.length === 0) logFile.appendToBuffer(`Warning: ` +
 				`Created new class "${name}" without any teachers!`);
 			if(studentIDs.length === 0) logFile.appendToBuffer(`Warning: ` +
