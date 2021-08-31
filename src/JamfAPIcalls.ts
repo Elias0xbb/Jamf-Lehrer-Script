@@ -108,7 +108,7 @@ async function getAllClasses(): Promise<ClassArrayObject[]> {
 
 /*-< getClass(uuid) >-------------------------------------------------------------------------+
 | Requests and returns the class specified by the uuid.                                       |
-| Crashs after five unsuccessful tries but ignores "ClassNotFound" error (returns undefined). |
+| Crashes after five unsuccessful tries but ignores "ClassNotFound" error (returns undefined). |
 +--------------------------------------------------------------------------------------------*/
 async function getClass(uuid: string): Promise<DetailedClassObject> {
 	for(let i = 0; i < 5; ++i) {
