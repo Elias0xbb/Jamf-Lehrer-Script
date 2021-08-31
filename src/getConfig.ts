@@ -45,4 +45,4 @@ function getConfig(): ConfigObject {
 }
 
 
-export { getConfig }
+export { getConfig, ConfigObject }
