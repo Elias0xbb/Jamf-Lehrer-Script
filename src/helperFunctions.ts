@@ -66,6 +66,8 @@ function combineGroupsAndClasses(groups: {name: string, id: number}[], classes: 
 async function getValidGroups(): Promise<{name: string, id: number}[]> {
 	// Get config properties
 	const clsNameRegEx = new RegExp(config.classUserGroupRegEx);
+	const altClsNameRegEx = new RegExp(config.altUserGroupRegEx);
+
 	const ignoredDescr = config.createdClassDescription;
 	if(!ignoredDescr || ignoredDescr === '') throw new Error(
 		'ignoredDescr undefined [Function call: getValidGroups].'
@@ -76,15 +78,29 @@ async function getValidGroups(): Promise<{name: string, id: number}[]> {
 
 	// Create and return an array of the relevant groups
 	let validGroups = <{ name: string, id: number }[]> [];
+	// Stores # of groups that aren't valid class-groups
+	let nIgnoredGroups = { total: 0, noMembers: 0 };
 	// Loop over all groups and test names and description
 	// If the name isn't a valid class name or the description is
 	// equal to config.createdClassDescription, the group will not be
 	// added to the validGroups array
-	allGroups.forEach(({name, id, description}) => {
-		if(description != ignoredDescr && clsNameRegEx.test(name)) {
-			validGroups.push({name: name, id: id});
+	allGroups.forEach(({name, id, description, userCount}) => {
+		if(description != ignoredDescr && (clsNameRegEx.test(name) || altClsNameRegEx.test(name))) {
+			// Check if the group has any members
+			if(userCount > 0) {
+				validGroups.push({name: name, id: id});
+			}
+			else nIgnoredGroups.noMembers++;
 		}
+		else nIgnoredGroups.total++;
 	})
+	// Calculate total # of ignored groups
+	nIgnoredGroups.total += nIgnoredGroups.noMembers;
+	// Log how many groups were ignored
+	logFile.appendToBuffer(`[getValidGroups] Ignored ${nIgnoredGroups.total} groups.`);
+	if(nIgnoredGroups.noMembers) {
+		logFile.appendToBuffer(`[getValidGroups] Ignored ${nIgnoredGroups.noMembers} empty groups.`);
+	}
 	
 	// Throw error if less valid classes than expected were found (to prevent unwanted deletion)
 	if(validGroups.length < config.minValidGroupCount) {
@@ -143,17 +159,18 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 	})()
 
 	// Loop over the group-class pair array
-	let classDeletions: Promise<string>[] = [];
+	let classCreations: Promise<string>[] = [];
 	let classCorrections: Promise<number>[] = [];
 
 	for(const e of grpClsArray) {
 		// Create a new class if none exists
 		if(!e.classUUID) {
 			// Get all group members and create the class
+			// TODO: Improve performance
 			let group = await jac.getMembersOf(`${e.groupID}`);
-			classDeletions.push(createClassFromGroupMembers(e.name, group, teacherGroupID));
+			classCreations.push(createClassFromGroupMembers(e.name, group, teacherGroupID));
 			
-			logFile.appendToBuffer(`Created new class '${e.name}'.`);
+			logFile.appendToBuffer(`Creating new class '${e.name}'.`);
 		} 
 		// Check class to see if the students and teachers match the corresponding group's members
 		else {
@@ -166,9 +183,13 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 	}
 
 	console.log('\n');
+	const createdClasses = await Promise.all(classCreations);
+	// Calculate number of created classes
+	let nCreatedClasses = 0;
+	// Ignore classes that were not created (returned 'null')
+	createdClasses.forEach(c => { if(c) nCreatedClasses++ });
 	// Print information on how many classes have been deleted...
-	const deleteMessages = await Promise.all(classDeletions);
-	console.log(toMagenta(`Created ${deleteMessages.length} missing classes.`));
+	console.log(toMagenta(`Created ${nCreatedClasses} missing classes.`));
 
 	// ...and how many classes have been changed
 	let nCorrectedClasses = 0;
