@@ -13,7 +13,7 @@ const config = (_ => {
 	// Check and return the config
 	if(config) return config;
 
-	console.log(`${toRed('Error')}: Console object undefined!`);
+	console.log(`${toRed('Error')}: Config object undefined!`);
 	process.exit(1);
 })();
 
