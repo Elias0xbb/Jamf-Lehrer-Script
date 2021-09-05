@@ -50,9 +50,10 @@ function setup(): { start: boolean, resetClasses: boolean } {
 	if(paramsObj.lfg_logFileName) config.logFileConfig.logFileName = paramsObj.lfg_logFileName;
 	if(paramsObj.lfg_enableLogFile) config.logFileConfig.enableLogFile = paramsObj.enableLogFile;
 	if(paramsObj.progressBarWidth) config.progressBarWidth = paramsObj.progressBarWidth;
-
-	// Delete all classes
-	
+	// Set start to true to enable program execution
+	if(paramsObj.start) startMainOpts.start = true;
+	// Set reset param if all classes should be deleted before correction
+	if(paramsObj.resetClasses) startMainOpts.resetClasses = true;
 
 	
 	// Overwrite the config file
