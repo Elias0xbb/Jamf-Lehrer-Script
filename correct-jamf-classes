@@ -33,6 +33,7 @@ display_help_page() {
 	echo "	[--tg-id|--teachergroup-id] id		Sets the group-ID the programm will search for in order to attain the teachers group."
 	echo " 						Default is '11818'."
 	echo "	[-cd|--class-description] name		Sets the description classes created by the program receive."
+	echo "						ATTENTION: This forces a class reset if not already set by '-r'!"
 	echo "	[--progressbar-width] width		Sets the width of the progress bar displayed by the program. Default is 32."
 }
 
@@ -54,6 +55,7 @@ do {
 		-s)
 			node_js_args+="\"start\":true,";;
 		-r|--reset-classes)
+			reset_classes=true;
 			node_js_args+="\"resetClasses\":true,";;
 		-t|--temporary)
 			config_change_temporary=true;;
@@ -97,6 +99,9 @@ do {
 			if [ -z "$class_description" ] #see --tg-name above
 			then echo "class description must not be empty!" >&2; exit 1;
 			else node_js_args+="\"createdClassDescription\":\"$class_description\",";
+			fi;
+			if [ ! $reset_classes ]
+			then reset_classes=true; node_js_args+="\"resetClasses\":true,";
 			fi;;
 		--progressbar-width)
 			progressbar_width="$2"; shift;
