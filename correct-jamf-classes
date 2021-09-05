@@ -9,16 +9,20 @@
 
 node_script_path="./src/start.js"
 documentation_path="$(realpath ../documentation.pdf)" #realpath gives the absolute path: https://stackoverflow.com/questions/3915040/how-to-obtain-the-absolute-path-of-a-file-via-shell-bash-zsh-sh
+config_change_temporary=false
+reset_classes=false
 
 display_help_page() {
-	echo "$(basename "$0"): Launch a JavaScript-Script that checks all the groups and classes"
-	echo "of a Jamf-School-Server for classes without groups, groups without classes and"
-	echo "classes whose students and teachers list doesn't match the corresponding groups,"
-	echo "correcting faulty classes."
-	echo "For more information about the JS-Script please see the documentation at $documentation_path"; #basename simply removes all directory paths from a given file path
+	echo "$(basename "$0"): Edit the configuration of the main program."
+	echo "Optionally also start the program afterwards."
 	echo ""
 	echo "Options:"
 	echo "	[-h|--help]				Displays this page."
+	echo "	[-s|--start]				Start the program after editing the configuration (or, if configuration remains unchanged,"
+	echo "						only start the program)."
+	echo "	[-r|--reset-classes]			When running the program ('-s'), delete all classes before the correction."
+	echo "	[-t|--temporary]			Start the program with the selected options, but restore the old configuration afterwards."
+	echo "						IMPORTANT: Also pass ’-s’ to use this option!"
 	echo "	[-a|--authorization] username:password	Tries to log into the Jamf-Server using the specified username and password."
 	echo "	[-l|--logfile] file			Redirects logging to the specified file."
 	echo "						Default file is ./logFiles/log.txt (relative to the location of main.js)."
@@ -28,6 +32,7 @@ display_help_page() {
 	echo "						Default is \"lehrer\"."
 	echo "	[--tg-id|--teachergroup-id] id		Sets the group-ID the programm will search for in order to attain the teachers group."
 	echo " 						Default is '11818'."
+	echo "	[-cd|--class-description] name		Sets the description classes created by the program receive."
 	echo "	[--progressbar-width] width		Sets the width of the progress bar displayed by the program. Default is 32."
 }
 
@@ -46,6 +51,12 @@ do {
 	case "$1" in
 		-h|--help)
 			display_help_page; exit 0;;
+		-s)
+			node_js_args+="\"start\":true,";;
+		-r|--reset-classes)
+			node_js_args+="\"resetClasses\":true,";;
+		-t|--temporary)
+			config_change_temporary=true;;
 		-a|--authorization)
 			authcode="$2"; shift;
 			if [[ ! "$authcode" = +(0|1|2|3|4|5|6|7|8|9):* ]] #'+(list)' checks for one or more occurances of the specified list of patterns: https://mywiki.wooledge.org/BashGuide/Patterns (doesn't seem to be working with brace extension tho sadly)
@@ -81,6 +92,12 @@ do {
 			then echo "teachergroup-id must not be empty or contain any letters (must be numeric)!" >&2; exit 1;
 			else node_js_args+="\"teacherGroupID\":$teachergroup_id,";
 			fi;;
+		-cd||--class-description)
+			class_description="$2"; shift;
+			if [ -z "$class_description" ] #see --tg-name above
+			then echo "class description must not be empty!" >&2; exit 1;
+			else node_js_args+="\"createdClassDescription\":\"$class_description\",";
+			fi;;
 		--progressbar-width)
 			progressbar_width="$2"; shift;
 			[ "$progressbar_width" -eq "$progressbar_width" ] 2>"/dev/null" #see --tg-id above
@@ -97,16 +114,29 @@ do {
 node_js_args=${node_js_args%,}
 node_js_args+="}"
 
-echo "length of node js args ${#node_js_args}"
+#echo "length of node js args ${#node_js_args}"
 
 if [ ${#node_js_args} -gt 2 ]
 then node_js_args=${node_js_args/"{"/"{\"params\":true,"}
 else node_js_args=${node_js_args/"{"/"{\"params\":false"}
 fi
 
-echo "Trying to start JavaScript-script using the following command: node $node_script_path $node_js_args"
+#make a copy of current script config if specified
 cd "$(dirname "$node_script_path")"
+if [ ! -s "../config/scriptConfig.json" ]
+then echo "Config-File not found, please make sure the directory at ’$(pwd)' is valid!" >&2; exit 1;
+fi
+if [ $config_changes_temporary ]
+then cp "../config/scriptConfig.json" "../config/scriptConfig.json.TEMP.OLD"
+fi
+
+echo "Trying to start JavaScript-script using the following command: node $node_script_path $node_js_args"
 node "$(basename "$node_script_path")" "$node_js_args"
+
+#restore old script config
+if [ $config_changes_temporary ]
+then mv "../config/scriptConfig.json.TEMP.OLD" "../config/scriptConfig.json"
+fi
 
 exit 0
 
