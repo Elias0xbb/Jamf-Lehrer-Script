@@ -1,10 +1,12 @@
 
+// Main program
+import {execute} from './main';
 // File IO
 import * as fs from 'fs';
 // Config Object interface
 import {ConfigObject} from './getConfig';
 
-function setup() {
+function setup(): { start: boolean, resetClasses: boolean } {
 	// Get parameters
 	const paramsObj: any = (_ => {
 		let pos = -1;
@@ -23,14 +25,18 @@ function setup() {
 
 	if(!paramsObj) {
 		console.log("[StartUp] Warning: Parameter Object not found!");
-		return 1;
+		return null;
 	}
-	if(!paramsObj.params) return 0;
-	
+	if(!paramsObj.params) {
+		console.log("[StartUp] No parameters passed./nTo start the correction, use the -s parameter.");
+		return null;
+	}
+
 	// Get the config object and update all the parameters that are passed
 	const config = <ConfigObject> JSON.parse(
 		fs.readFileSync('../config/scriptConfig.json', { encoding: 'utf8' }));
 
+	let startMainOpts = { start: false, resetClasses: false };
 	// AUTHCODE:
 	if(paramsObj.authcode) {
 		// Convert utf-8 to base64
@@ -45,13 +51,24 @@ function setup() {
 	if(paramsObj.lfg_enableLogFile) config.logFileConfig.enableLogFile = paramsObj.enableLogFile;
 	if(paramsObj.progressBarWidth) config.progressBarWidth = paramsObj.progressBarWidth;
 
+	// Delete all classes
+	
+
 	
 	// Overwrite the config file
 	const newConfig = JSON.stringify(config, null, 4);
 	console.log('[StartUp] Overwriting the config...');
 	fs.writeFileSync('../config/scriptConfig.json', newConfig);
+
+	return startMainOpts;
 }
 
-(() => {
-	setup();
+// Start the startup script
+(async () => {
+	const startMainOpts = setup();
+	// If main should not be started or null is returned, stop the program
+	if((startMainOpts ?? { start: false }).start === false) process.exit(0);
+	
+	// Start main
+	await execute(startMainOpts.resetClasses);
 })()

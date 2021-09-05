@@ -17,7 +17,7 @@ import * as logFile from './logFile';
 | Requests all classes and relevant groups, deletes classes without a respective |
 | group, adds missing classes and removes / adds users to correct classes.       |
 +-------------------------------------------------------------------------------*/
-async function main(): Promise<number> {
+async function main(deleteClasses: boolean): Promise<number> {
 	try {
 		// Init the progress bar
 		progBar.initProgressBar(config.progressBarWidth, config.progressBarOffset);
@@ -27,6 +27,21 @@ async function main(): Promise<number> {
 		let groups = await hf.getValidGroups();
 		let classes = await jac.getAllClasses();
 		console.log(hf.toCyan(`Received ${groups.length} class groups and ${classes.length} classes.`));
+
+		// Delete all classes before execution (if enabled)
+		if(deleteClasses) {
+			console.log(hf.toMagenta('Deleting all classes'));
+			let res = [];
+			// Send api request for every class (DELETE)
+			classes.forEach(c => res.push(jac.deleteClass(c.uuid)));
+			// Wait for all classes to be deleted
+			res = await Promise.all(res);
+			console.log(`Deleted ${res.length} classes.`);
+			// Request all classes to see if any exist
+			classes = await jac.getAllClasses();
+
+			if(classes.length > 0) console.log(hf.toRed(`${classes.length} classes found.`));
+		}
 
 		// Create an array of group-class pairs
 		let classGroupPairs = hf.combineGroupsAndClasses(groups, classes);
@@ -81,8 +96,10 @@ async function main(): Promise<number> {
 
 
 // Call main function
-(async _ => {
-	const err = await main();
+async function execute(deleteClasses: boolean) {
+	const err = await main(deleteClasses);
 	await logFile.writeLogFile();
 	process.exit(err);
-})()
+}
+
+export { execute };
