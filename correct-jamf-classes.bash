@@ -92,7 +92,7 @@ do {
 			then echo "teachergroup-id must not be empty or contain any letters (must be numeric)!" >&2; exit 1;
 			else node_js_args+="\"teacherGroupID\":$teachergroup_id,";
 			fi;;
-		-cd||--class-description)
+		-cd|--class-description)
 			class_description="$2"; shift;
 			if [ -z "$class_description" ] #see --tg-name above
 			then echo "class description must not be empty!" >&2; exit 1;
