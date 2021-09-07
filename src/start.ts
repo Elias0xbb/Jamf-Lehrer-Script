@@ -49,7 +49,17 @@ function setup(): { start: boolean, resetClasses: boolean } {
 	if(paramsObj.lfg_autoClear) config.logFileConfig.autoClear = paramsObj.lfg_autoClear;
 	if(paramsObj.lfg_logFileName) config.logFileConfig.logFileName = paramsObj.lfg_logFileName;
 	if(paramsObj.lfg_enableLogFile) config.logFileConfig.enableLogFile = paramsObj.enableLogFile;
+	if(paramsObj.createdClassDescription) config.createdClassDescription = paramsObj.createdClassDescription;
+
+	// TODO: Add to bash script
+	if(paramsObj.minValidGroupCount) config.minValidGroupCount = paramsObj.minValidGroupCount;
+	if(paramsObj.changedStudentsLimit) config.changedStudentsLimit = paramsObj.changedStudentsLimit;
+	if(paramsObj.changedTeachersLimit) config.changedTeachersLimit = paramsObj.changedTeachersLimit;
+	if(paramsObj.coloredConsoleOutputs) config.coloredConsoleOutputs = paramsObj.coloredConsoleOutputs;
 	if(paramsObj.progressBarWidth) config.progressBarWidth = paramsObj.progressBarWidth;
+	if(paramsObj.progressBarOffset) config.progressBarOffset = paramsObj.progressBarOffset;
+	// >----
+
 	// Set start to true to enable program execution
 	if(paramsObj.start) startMainOpts.start = true;
 	// Set reset param if all classes should be deleted before correction
