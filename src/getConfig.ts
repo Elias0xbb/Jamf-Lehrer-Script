@@ -6,7 +6,6 @@ interface ConfigObject {
 	classUserGroupRegEx: string,
 	altUserGroupRegEx: string,
 	authorization: string,
-	verboseMode: boolean,
 	minValidGroupCount: number,
 	teacherGroupName: string,
 	teacherGroupID: number,

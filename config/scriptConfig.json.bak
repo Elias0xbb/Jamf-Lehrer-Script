@@ -3,7 +3,6 @@
 	"classUserGroupRegEx": "^(k|q|j|(ib)|(gt))\\d{1,2}\\w*\\d*.\\w+\\d*\\s*$",
 	"altUserGroupRegEx": "^iPad Koffer",
 	"authorization": "",
-	"verboseMode": true,
 	"minValidGroupCount": 250,
 	"teacherGroupName": "lehrer",
 	"teacherGroupID": 11818,
