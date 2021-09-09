@@ -32,7 +32,9 @@ var config = void 0;
 | Returns the config object. The object is loaded |
 | when the function is called for the first time. |
 +------------------------------------------------*/
-function getConfig(): ConfigObject {
+function getConfig(clearConstant = false): ConfigObject {
+	// reset config constant if needed
+	if(clearConstant) config = void 0;
 	// Return object if scriptConfig.json has already been read before
 	if(config) return config;
 	// Read the config file, then set and return config
