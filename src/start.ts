@@ -40,8 +40,8 @@ function setup(): { start: boolean, resetClasses: boolean } {
 	// AUTHCODE:
 	if(paramsObj.authcode) {
 		// Convert utf-8 to base64
-		const auth = btoa(unescape(encodeURIComponent(paramsObj.authcode)));
-		config.authorization = auth;
+		const auth = Buffer.from(unescape(encodeURIComponent(paramsObj.authcode)));
+		config.authorization = auth.toString('base64');
 	}
 	if(paramsObj.teacherGroupName) config.teacherGroupName = paramsObj.teacherGroupName;
 	if(paramsObj.teacherGroupID) config.teacherGroupID = paramsObj.teacherGroupID;
