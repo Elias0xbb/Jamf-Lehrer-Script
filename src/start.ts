@@ -44,19 +44,19 @@ function setup(): { start: boolean, resetClasses: boolean } {
 		config.authorization = auth.toString('base64');
 	}
 	if(paramsObj.teacherGroupName) config.teacherGroupName = paramsObj.teacherGroupName;
-	if(paramsObj.teacherGroupID) config.teacherGroupID = paramsObj.teacherGroupID;
+	if(paramsObj.teacherGroupID != void 0) config.teacherGroupID = paramsObj.teacherGroupID;
 	if(paramsObj.lfg_dirPath) config.logFileConfig.dirPath = paramsObj.lfg_dirPath;
-	if(paramsObj.lfg_autoClear) config.logFileConfig.autoClear = paramsObj.lfg_autoClear;
+	if(paramsObj.lfg_autoClear != void 0) config.logFileConfig.autoClear = paramsObj.lfg_autoClear;
 	if(paramsObj.lfg_logFileName) config.logFileConfig.logFileName = paramsObj.lfg_logFileName;
-	if(paramsObj.lfg_enableLogFile) config.logFileConfig.enableLogFile = paramsObj.enableLogFile;
+	if(paramsObj.lfg_enableLogFile != void 0) config.logFileConfig.enableLogFile = paramsObj.lfg_enableLogFile;
 	if(paramsObj.createdClassDescription) config.createdClassDescription = paramsObj.createdClassDescription;
 
 	// TODO: Add to bash script
-	if(paramsObj.minValidGroupCount) config.minValidGroupCount = paramsObj.minValidGroupCount;
-	if(paramsObj.changedStudentsLimit) config.changedStudentsLimit = paramsObj.changedStudentsLimit;
-	if(paramsObj.changedTeachersLimit) config.changedTeachersLimit = paramsObj.changedTeachersLimit;
-	if(paramsObj.coloredConsoleOutputs) config.coloredConsoleOutputs = paramsObj.coloredConsoleOutputs;
-	if(paramsObj.progressBarWidth) config.progressBarWidth = paramsObj.progressBarWidth;
+	if(paramsObj.minValidGroupCount != void 0) config.minValidGroupCount = paramsObj.minValidGroupCount;
+	if(paramsObj.changedStudentsLimit != void 0) config.changedStudentsLimit = paramsObj.changedStudentsLimit;
+	if(paramsObj.changedTeachersLimit != void 0) config.changedTeachersLimit = paramsObj.changedTeachersLimit;
+	if(paramsObj.coloredConsoleOutputs != void 0) config.coloredConsoleOutputs = paramsObj.coloredConsoleOutputs;
+	if(paramsObj.progressBarWidth != void 0) config.progressBarWidth = paramsObj.progressBarWidth;
 	if(paramsObj.progressBarOffset) config.progressBarOffset = paramsObj.progressBarOffset;
 	// >----
 
