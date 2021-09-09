@@ -18,21 +18,38 @@ display_help_page() {
 	echo "	[-h|--help]				Displays this page."
 	echo "	[-s|--start]				Start the program after editing the configuration (or, if configuration remains unchanged,"
 	echo "						only start the program)."
-	echo "	[-r|--reset-classes]			When running the program ('-s'), delete all classes before the correction."
+	echo "	[-r|--reset-classes]			If running the program ('-s'), delete all classes before the correction."
 	echo "	[-t|--temporary]			Start the program with the selected options, but restore the old configuration afterwards."
 	echo "						IMPORTANT: Also pass ’-s’ to use this option!"
 	echo "	[-a|--authorization] username:password	Tries to log into the Jamf-Server using the specified username and password."
+	echo "						Current value: Not available for security reasons."
 	echo "	[-l|--logfile] file			Redirects logging to the specified file."
 	echo "						Default file is ./logFiles/log.txt (relative to the location of main.js)."
-	echo "	[--disable-logging]			Disables output to the logfile. Output to logfile is enabled by default."
-	echo "	[--enable-log-chaining]			If this option is selected, the logfile will not be cleared before running the program."
-	echo "	[--tg-name|--teachergroup-name] name	Sets the groupname the program will search for in order to attain the teachers group."
-	echo "						Default is \"lehrer\"."
+	echo "	[--enable-logging] [true|false]		Disables or enables output to the logfile."
+	echo "						Current value: $_enable_logging."
+	echo "	[--enable-log-chaining] [true|false]	If this option is selected, the logfile will not be cleared before running the program."
+	echo "						Current value: $_enable_log_chaining."
 	echo "	[--tg-id|--teachergroup-id] id		Sets the group-ID the programm will search for in order to attain the teachers group."
-	echo " 						Default is '11818'."
+	echo " 						Current value: '$_teachergroup_id'."
+	echo "	[--tg-name|--teachergroup-name] name	Sets the groupname the program will search for in order to attain the teachers group."
+	echo "						This option will only be used if no group with found using the teachergroup-id."
+	echo "						Current value: \"$_teachergroup_name\"."
 	echo "	[-cd|--class-description] name		Sets the description classes created by the program receive."
 	echo "						ATTENTION: This forces a class reset if not already set by '-r'!"
-	echo "	[--progressbar-width] width		Sets the width of the progress bar displayed by the program. Default is 32."
+	echo "						Current value: '$_class_description'."
+	echo "	[--min-valid-groups] value		Set the number of groups that have to be valid in order for the program to not terminate."
+	echo "						Current value: $_min_valid_groups."
+	echo "	[--corrected-students-limit] value	Set the number of students that can be corrected in a class without deleting and recreating the class."
+	echo "						Current value: $_corrected_students_limit."
+	echo "	[--corrected-teachers-limit] value	Set the number of teacherss that can be corrected in a class without deleting and recreating the class."
+	echo "						Current value: $_corrected_teachers_limit."
+	echo "	[--enable-colored-output] [true|false]	Enable or disable colored console outputs."
+	echo "						Current value: $_enable_colored_output."
+	echo "	[--progressbar-width] width		Sets the width of the progress bar displayed by the program."
+	echo "						Current value: $_progressbar_width."
+	echo "	[--progressbar-pretext] text		Set the text that is displayed in front of the progessbar. Can be used to adjust offset."
+	echo "						ATTENTION: Remember to quote if using spaces to adjust offset!"
+	echo "						Current value: \"$_progressbar_pretext\"."
 }
 
 #check if node script path is valid
@@ -68,17 +85,24 @@ do {
 			fi;;
 		-l|--logfile)
 			logfile_path="$(realpath "$2")"; shift; #need to get the absolute path in case the specified path is relative
-			if [ ! -e "$logfile_path" ]
-			then echo "No file found at '$logfile_path'. Please check spelling!" >&2; exit 1;
-			else {
-				node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; #dir and filename needs to be seperated for the JS-Script for some reason
-				node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
-				node_js_args+="\"lfg_enableLogFile\":true," #lets force enable of the logfile just to be sure
-			} fi;;
-		--disable-logging)
-			node_js_args+="\"lfg_enableLogFile\":false,";;
+			#apparently the program already checks for the logfile and creates a new one if the specified file does not exist
+			node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; #dir and filename needs to be seperated for the JS-Script for some reason
+			node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
+			node_js_args+="\"lfg_enableLogFile\":true,";; #lets force enable of the logfile just to be sure
+		--enable-logging)
+			enable_logging="$2"; shift;
+			if [[ "$enable_logging" != @("true"|"false") ]]
+			then echo "enable-logging must be set to 'true' or to 'false'!" >&2; exit 1;
+			else node_js_args+="\"lfg_enableLogFile\":$enable_logging,";
+			fi;;
 		--enable-log-chaining)
-			node_js_args+="\"lfg_autoClear\":false,";;
+			enable_log_chaining="$2"; shift;
+			if [ "$enable_log_chaining" = "true" ]
+			then node_js_args+="\"lfg_autoClear\":false,";
+			elif [ "$enable_log_chaining" = "false" ]
+			then node_js_args+="\"lfg_autoClear\":true,";
+			else echo "enable-log-chaing must be set to either 'true' or 'false'!" >&2; exit 1;
+			fi;;
 		--tg-name|--teachergroup-name)
 			teachergroup_name="$2"; shift;
 			if [ -z "$teachergroup_name" ] #returns true if teachergroup_name is an empty string
@@ -101,6 +125,33 @@ do {
 			if [ ! $reset_classes ]
 			then reset_classes=true; node_js_args+="\"resetClasses\":true,";
 			fi;;
+		--min-valid-groups)
+			min_valid_groups="$2"; shift;
+			[ "$min_valid_groups" -eq "$min_valid_groups" ] 2>"/dev/null" #see --tg-id above
+			if [ $? -gt 0 ]
+			then echo "min-valid-groups must not be empty or contain any letters (must be numeric)!" >&2; exit 1;
+			else node_js_args+="\"minValidGroupCount\":$min_valid_groups,";
+			fi;;
+		--corrected-students-limit)
+			corrected_students_limit="$2"; shift;
+			[ "$corrected_students_limit" -eq "$corrected_students_limit" ] 2>"/dev/null" #see --tg-id above
+			if [ $? -gt 0 ]
+			then echo "corrected-students-limit must not be empty or contain any letters (must be numeric)!" >&2; exit 1;
+			else node_js_args+="\"changedStudentsLimit\":$corrected_students_limit,";
+			fi;;
+		--corrected-teachers-limit)
+			corrected_teachers_limit="$2"; shift;
+			[ "$corrected_teachers_limit" -eq "$corrected_teachers_limit" ] 2>"/dev/null" #see --tg-id above
+			if [ $? -gt 0 ]
+			then echo "corrected-teachers-limit must not be empty or contain any letters (must be numeric)!" >&2; exit 1;
+			else node_js_args+="\"changedTeachersLimit\":$corrected_teachers_limit,";
+			fi;;
+		--enable-colored-output)
+			enable_colored_output="$2"; shift;
+			if [[ "$enable_colored_output" != @("true"|"false") ]]
+			then echo "enable-colored-output must be set to 'true' or to 'false'!" >&2; exit 1;
+			else node_js_args+="\"coloredConsoleOutputs\":$enable_colored_output,";
+			fi;;
 		--progressbar-width)
 			progressbar_width="$2"; shift;
 			[ "$progressbar_width" -eq "$progressbar_width" ] 2>"/dev/null" #see --tg-id above
@@ -108,6 +159,9 @@ do {
 			then echo "progressbar-width must not be empty or contain any letters (must be numeric)!" >&2; exit 1;
 			else node_js_args+="\"progressBarWidth\":$progressbar_width,";
 			fi;;
+		--progressbar-pretext)
+			#progressbar-pretext may be empty
+			node_js_args+="\"progressBarOffset\":\"$2\","; shift;;
 		*)
 			echo "$(basename "$0"): Invalid Option '$1'"; echo "Please try '"$0" -h' for more information.">&2; exit 1;; 
 	esac;
