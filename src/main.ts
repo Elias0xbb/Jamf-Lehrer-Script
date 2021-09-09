@@ -4,7 +4,7 @@ import * as jac from './JamfAPIcalls';
 // Helper Functions
 import * as hf from './helperFunctions';
 // config file
-import {config} from './helperFunctions';
+import {getConfig} from './getConfig';
 // Progress bar
 import * as progBar from './ProgressBar';
 // Log File
@@ -19,8 +19,10 @@ import * as logFile from './logFile';
 +-------------------------------------------------------------------------------*/
 async function main(deleteClasses: boolean): Promise<number> {
 	try {
+		// Clear config constant:
+		getConfig(true);
 		// Init the progress bar
-		progBar.initProgressBar(config.progressBarWidth, config.progressBarOffset);
+		progBar.initProgressBar(getConfig().progressBarWidth, getConfig().progressBarOffset);
 
 		// Get all classes and relevant groups
 		console.log(hf.toGreen(`Requesting classes and groups...`));
