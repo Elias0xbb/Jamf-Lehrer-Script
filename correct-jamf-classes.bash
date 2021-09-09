@@ -1,9 +1,15 @@
 #!/bin/bash
-#correct-jamf-classes - A simple script to start a JavaScript-Script using node. Supports setting certain options/parameters to start the JS-Script with
-#The JS-Script reads all the groups and classes from a Jamf School Server, deleting classes without groups, making new classes for groups without a classs and
-#editing all classes to match their corresponding groups in terms of students and teachers.
+# correct-jamf-classes - A simple script to start a JavaScript-Script using node. Supports setting certain options/parameters to start the JS-Script with
+# The JS-Script reads all the groups and classes from a Jamf School Server, deleting classes without groups, making new classes for groups without a classs and
+# editing all classes to match their corresponding groups in terms of students and teachers.
 #
-#For all argument usage see below
+# For all argument usage see below
+#
+# If you're wondering what in the mother of all fuck all the '#>?@[{][]??$><$q##' are supposed to mean
+# Please see this guide, it's really helpful: https://mywiki.wooledge.org/BashGuide
+# It's really confusing at first, but if you don't give up and let it sink in for a while it starts to make sense and you will be able to (kind of) read the code
+# Don't expect to keep your sanity in the process though
+# Plus I can't really guarantee you will understand the mess below even if you understand bash, so good luck traveller
 
 node_script_path="./src/start.js"
 documentation_path="$(realpath ../documentation.pdf)" #realpath gives the absolute path: https://stackoverflow.com/questions/3915040/how-to-obtain-the-absolute-path-of-a-file-via-shell-bash-zsh-sh
