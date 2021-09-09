@@ -129,7 +129,7 @@ cd "$(dirname "$node_script_path")"
 if [ ! -s "../config/scriptConfig.json" ]
 then echo "Config-File not found, please make sure the directory at ’$(pwd)' is valid!" >&2; exit 1;
 fi
-if [ $config_changes_temporary ]
+if [ "$config_change_temporary" = "true" ]
 then cp "../config/scriptConfig.json" "../config/scriptConfig.json.TEMP.OLD"
 fi
 
@@ -137,7 +137,7 @@ echo "Trying to start JavaScript-script using the following command: node $node_
 node "$(basename "$node_script_path")" "$node_js_args"
 
 #restore old script config
-if [ $config_changes_temporary ]
+if [ "$config_change_temporary" = "true" ]
 then mv "../config/scriptConfig.json.TEMP.OLD" "../config/scriptConfig.json"
 fi
 
