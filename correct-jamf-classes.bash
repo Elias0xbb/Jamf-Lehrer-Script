@@ -10,9 +10,50 @@ documentation_path="$(realpath ../documentation.pdf)" #realpath gives the absolu
 config_change_temporary=false
 reset_classes=false
 
+get_config_parameter_value() {
+	#cd "$(dirname "$(realpath "$node_script_path")")"
+	value="$(grep "$1" ../config/scriptConfig.json)"
+	value="${value#*:*}" 	#remove the '"parameter":' part
+	value="${value#' '}"	#remove any whitespace in front for beauty reasons
+	value="${value#*\"}"	#remove the '"' part if existing (cant do this in the above expression because then it wont work if not existing)
+	value="${value%,*}"	#remove the ',' part
+	value="${value%\"}"	#remove the '"' part if existing (see above as to why not include in above expression)
+	return 0;
+}
+
+get_current_config_values() {
+	cd "$(dirname "$(realpath "$node_script_path")")"
+	if [ ! -s "../config/scriptConfig.json" ]
+	then echo "Couldn't find config-file! Please make sure config-file exists!" >&2; return 1;
+	else {
+		get_config_parameter_value "dirPath";			_logfile_path="$value";
+		get_config_parameter_value "logFileName"; 		_logfile_path+="/$value";
+		get_config_parameter_value "enableLogFile";		_enable_logging="$value"
+		get_config_parameter_value "autoClear";			_enable_log_chaining="$value"
+		if [ "$enable_log_chaining" = "true" ]
+		then enable_log_chaining=false;
+		else enable_log_chaining=true;
+		fi;
+		get_config_parameter_value "teacherGroupID";		_teachergroup_id="$value"
+		get_config_parameter_value "teacherGroupName";		_teachergroup_name="$value"
+		get_config_parameter_value "createdClassDescription";	_class_description="$value"
+		get_config_parameter_value "minValidGroupCount";	_min_valid_groups="$value"
+		get_config_parameter_value "changedStudentsLimit"; 	_corrected_students_limit="$value"
+		get_config_parameter_value "changedTeachersLimit";	_corrected_teachers_limit="$value"
+		get_config_parameter_value "coloredConsoleOutputs";	_enable_colored_output="$value"
+		get_config_parameter_value "progressBarWidth";		_progressbar_width="$value"
+		get_config_parameter_value "progressBarOffset";		_progressbar_pretext="$value"
+		return 0;
+	}
+	fi;
+}
+
 display_help_page() {
+	get_current_config_values
 	echo "$(basename "$0"): Edit the configuration of the main program."
 	echo "Optionally also start the program afterwards."
+	echo "For more information on how the actual program works and what it does plesae see the documentation at:"
+	echo "'$documentation_path'"
 	echo ""
 	echo "Options:"
 	echo "	[-h|--help]				Displays this page."
@@ -24,7 +65,7 @@ display_help_page() {
 	echo "	[-a|--authorization] username:password	Tries to log into the Jamf-Server using the specified username and password."
 	echo "						Current value: Not available for security reasons."
 	echo "	[-l|--logfile] file			Redirects logging to the specified file."
-	echo "						Default file is ./logFiles/log.txt (relative to the location of main.js)."
+	echo "						Current value is: '$_logfile_path' (relative to the location of main.js)."
 	echo "	[--enable-logging] [true|false]		Disables or enables output to the logfile."
 	echo "						Current value: $_enable_logging."
 	echo "	[--enable-log-chaining] [true|false]	If this option is selected, the logfile will not be cleared before running the program."
@@ -41,7 +82,7 @@ display_help_page() {
 	echo "						Current value: $_min_valid_groups."
 	echo "	[--corrected-students-limit] value	Set the number of students that can be corrected in a class without deleting and recreating the class."
 	echo "						Current value: $_corrected_students_limit."
-	echo "	[--corrected-teachers-limit] value	Set the number of teacherss that can be corrected in a class without deleting and recreating the class."
+	echo "	[--corrected-teachers-limit] value	Set the number of teachers that can be corrected in a class without deleting and recreating the class."
 	echo "						Current value: $_corrected_teachers_limit."
 	echo "	[--enable-colored-output] [true|false]	Enable or disable colored console outputs."
 	echo "						Current value: $_enable_colored_output."
@@ -50,6 +91,7 @@ display_help_page() {
 	echo "	[--progressbar-pretext] text		Set the text that is displayed in front of the progessbar. Can be used to adjust offset."
 	echo "						ATTENTION: Remember to quote if using spaces to adjust offset!"
 	echo "						Current value: \"$_progressbar_pretext\"."
+	return 0;
 }
 
 #check if node script path is valid
