@@ -1,15 +1,11 @@
 #!/bin/bash
-# correct-jamf-classes - A simple script to start a JavaScript-Script using node. Supports setting certain options/parameters to start the JS-Script with
-# The JS-Script reads all the groups and classes from a Jamf School Server, deleting classes without groups, making new classes for groups without a classs and
-# editing all classes to match their corresponding groups in terms of students and teachers.
+# correct-jamf-classes - A simple script to start the correction script using node.
+# Supports setting certain options/parameters to start the JS-Script with
+# The JS-Script reads all the groups and classes from a Jamf School Server, deleting classes without groups, 
+# creating new classes for groups without a class and editing all classes to match their corresponding groups
+# in terms of students and teachers.
 #
 # For all argument usage see below
-#
-# If you're wondering what in the mother of all fuck all the '#>?@[{][]??$><$q##' are supposed to mean
-# Please see this guide, it's really helpful: https://mywiki.wooledge.org/BashGuide
-# It's really confusing at first, but if you don't give up and let it sink in for a while it starts to make sense and you will be able to (kind of) read the code
-# Don't expect to keep your sanity in the process though
-# Plus I can't really guarantee you will understand the mess below even if you understand bash, so good luck traveller
 
 node_script_path="./src/start.js"
 documentation_path="$(realpath ../documentation.pdf)" #realpath gives the absolute path: https://stackoverflow.com/questions/3915040/how-to-obtain-the-absolute-path-of-a-file-via-shell-bash-zsh-sh
@@ -20,10 +16,10 @@ get_config_parameter_value() {
 	#cd "$(dirname "$(realpath "$node_script_path")")"
 	value="$(grep "$1" ../config/scriptConfig.json)"
 	value="${value#*:*}" 	#remove the '"parameter":' part
-	value="${value#' '}"	#remove any whitespace in front for beauty reasons
-	value="${value#*\"}"	#remove the '"' part if existing (cant do this in the above expression because then it wont work if not existing)
-	value="${value%,*}"	#remove the ',' part
-	value="${value%\"}"	#remove the '"' part if existing (see above as to why not include in above expression)
+	value="${value#' '}"	#remove any whitespace in front
+	value="${value#*\"}"	#remove '"' if necessary
+	value="${value%,*}"	#remove ','
+	value="${value%\"}"	#remove '"' at the end of the string
 	return 0;
 }
 
@@ -101,7 +97,7 @@ display_help_page() {
 }
 
 #check if node script path is valid
-if [ ! -e "$node_script_path"  ] #-e checks whether the file at the given path exists and is non empty: https://mywiki.wooledge.org/BashGuide/TestsAndConditionals
+if [ ! -e "$node_script_path"  ] # check whether the file at the given path exists and is non empty
 then {
 	echo "The file at $node_script_path does not exist or is empty! Please make sure 'node_script_path' points to the correct script!" >&2
 	exit 1
@@ -109,8 +105,8 @@ then {
 
 node_js_args="{"
 
-#process all the arguments by shifting of the positional parameters
-while [ -n "$1" ] #-n returns true if string is not empty #$1 is always the first positional parameter even if sourced (as tests show)
+#process all the arguments by shifting the positional parameters
+while [ -n "$1" ] #-n returns true if string is not empty #$1 is always the first positional parameter
 do {
 	case "$1" in
 		-h|--help)
@@ -124,7 +120,7 @@ do {
 			config_change_temporary=true;;
 		-a|--authorization)
 			authcode="$2"; shift;
-			if [[ ! "$authcode" = +(0|1|2|3|4|5|6|7|8|9):* ]] #'+(list)' checks for one or more occurances of the specified list of patterns: https://mywiki.wooledge.org/BashGuide/Patterns (doesn't seem to be working with brace extension tho sadly)
+			if [[ ! "$authcode" = +(0|1|2|3|4|5|6|7|8|9):* ]] #'+(list)' checks for one or more occurances of the specified list of patterns
 			then {
 				echo "Invalid authorization \"$authcode\". Please make sure username and password are valid and seperated by ':'." >&2;
 				exit 1;
@@ -132,11 +128,10 @@ do {
 			else node_js_args+="\"authcode\":\"$authcode\",";
 			fi;;
 		-l|--logfile)
-			logfile_path="$(realpath "$2")"; shift; #need to get the absolute path in case the specified path is relative
-			#apparently the program already checks for the logfile and creates a new one if the specified file does not exist
-			node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; #dir and filename needs to be seperated for the JS-Script for some reason
+			logfile_path="$(realpath "$2")"; shift; # get the absolute path in case the specified path is relative
+			node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; # seperate dir- and filename
 			node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
-			node_js_args+="\"lfg_enableLogFile\":true,";; #lets force enable of the logfile just to be sure
+			node_js_args+="\"lfg_enableLogFile\":true,";; # enable the logfile
 		--enable-logging)
 			enable_logging="$2"; shift;
 			if [[ "$enable_logging" != @("true"|"false") ]]
@@ -153,13 +148,13 @@ do {
 			fi;;
 		--tg-name|--teachergroup-name)
 			teachergroup_name="$2"; shift;
-			if [ -z "$teachergroup_name" ] #returns true if teachergroup_name is an empty string
+			if [ -z "$teachergroup_name" ] # if teachergroup_name is an empty string throw an error
 			then echo "teachergroup-name must not be empty!" >&2; exit 1;
 			else node_js_args+="\"teacherGroupName\":\"$teachergroup_name\",";
 			fi;;
 		--tg-id|--teachergroup-id)
 			teachergroup_id="$2"; shift;
-			[ "$teachergroup_id" -eq "$teachergroup_id" ] 2>"/dev/null" #this should throw an error and exit with code above 0 if supplied variables are not numeric: https://stackoverflow.com/questions/806906/how-do-i-test-if-a-variable-is-a-number-in-bash/806923
+			[ "$teachergroup_id" -eq "$teachergroup_id" ] 2>"/dev/null" # throw an error and exit if the values aren't numeric
 			if [ $? -gt 0 ]
 			then echo "teachergroup-id must not be empty or contain any letters (must be numeric)!" >&2; exit 1;
 			else node_js_args+="\"teacherGroupID\":$teachergroup_id,";
