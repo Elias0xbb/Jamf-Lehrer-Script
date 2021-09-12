@@ -1,7 +1,7 @@
 
 import {IncomingMessage} from 'http';
 import * as HTTPS from 'https';
-import {config} from './helperFunctions';
+import {getConfig} from './getConfig';
 
 const HOSTNAME = 'api.zuludesk.com';
 
@@ -16,7 +16,7 @@ function sendRequest(path: string, method: string, params: object) {
 		path: path,
 		method: method,
 		headers: {
-			"Authorization": `Basic ${config.authorization}`,
+			"Authorization": `Basic ${getConfig().authorization}`,
 			"Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
 			"X-Server-Protocol-Version": "3",
 		}

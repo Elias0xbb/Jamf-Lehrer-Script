@@ -1,4 +1,4 @@
-// Helper function that returns the config object
+// Helper function that returns the getConfig() object
 import {getConfig} from './getConfig';
 // Https wrapper functions
 import * as jac from './JamfAPIcalls';
@@ -7,24 +7,13 @@ import {displayProgressBar} from './ProgressBar';
 // Log File
 import * as logFile from './logFile';
 
-// Get config object
-const config = (_ => {
-	let config = getConfig();
-	// Check and return the config
-	if(config) return config;
-
-	console.log(`${toRed('Error')}: Config object undefined!`);
-	process.exit(1);
-})();
-
-
 // Change the color of text in the console:
-const toRed = (msg: string) => config.coloredConsoleOutputs ? `\x1b[31m${msg}\x1b[0m` : msg;
-const toGreen = (msg: string) => config.coloredConsoleOutputs ? `\x1b[32m${msg}\x1b[0m` : msg;
-const toYellow = (msg: string) => config.coloredConsoleOutputs ? `\x1b[33m${msg}\x1b[0m` : msg;
-const toBlue = (msg: string) => config.coloredConsoleOutputs ? `\x1b[34m${msg}\x1b[0m` : msg;
-const toMagenta = (msg: string) => config.coloredConsoleOutputs ? `\x1b[35m${msg}\x1b[0m` : msg;
-const toCyan = (msg: string) => config.coloredConsoleOutputs ? `\x1b[36m${msg}\x1b[0m` : msg;
+const toRed = (msg: string) => getConfig().coloredConsoleOutputs ? `\x1b[31m${msg}\x1b[0m` : msg;
+const toGreen = (msg: string) => getConfig().coloredConsoleOutputs ? `\x1b[32m${msg}\x1b[0m` : msg;
+const toYellow = (msg: string) => getConfig().coloredConsoleOutputs ? `\x1b[33m${msg}\x1b[0m` : msg;
+const toBlue = (msg: string) => getConfig().coloredConsoleOutputs ? `\x1b[34m${msg}\x1b[0m` : msg;
+const toMagenta = (msg: string) => getConfig().coloredConsoleOutputs ? `\x1b[35m${msg}\x1b[0m` : msg;
+const toCyan = (msg: string) => getConfig().coloredConsoleOutputs ? `\x1b[36m${msg}\x1b[0m` : msg;
 
 // An object storing the the class/group name and the classes uuid + group's id
 interface GroupClassPairObject { name: string, groupID: number, classUUID: string }
@@ -63,11 +52,11 @@ function combineGroupsAndClasses(groups: {name: string, id: number}[], classes: 
 | which a class (should) exist(s).                                    |
 +--------------------------------------------------------------------*/
 async function getValidGroups(): Promise<{name: string, id: number}[]> {
-	// Get config properties
-	const clsNameRegEx = new RegExp(config.classUserGroupRegEx);
-	const altClsNameRegEx = new RegExp(config.altUserGroupRegEx);
+	// Get getConfig() properties
+	const clsNameRegEx = new RegExp(getConfig().classUserGroupRegEx);
+	const altClsNameRegEx = new RegExp(getConfig().altUserGroupRegEx);
 
-	const ignoredDescr = config.createdClassDescription;
+	const ignoredDescr = getConfig().createdClassDescription;
 	if(!ignoredDescr || ignoredDescr === '') throw new Error(
 		'ignoredDescr undefined [Function call: getValidGroups].'
 	);
@@ -81,7 +70,7 @@ async function getValidGroups(): Promise<{name: string, id: number}[]> {
 	let nIgnoredGroups = { total: 0, noMembers: 0 };
 	// Loop over all groups and test names and description
 	// If the name isn't a valid class name or the description is
-	// equal to config.createdClassDescription, the group will not be
+	// equal to getConfig().createdClassDescription, the group will not be
 	// added to the validGroups array
 	allGroups.forEach(({name, id, description, userCount}) => {
 		if(description != ignoredDescr && (clsNameRegEx.test(name) || altClsNameRegEx.test(name))) {
@@ -102,10 +91,10 @@ async function getValidGroups(): Promise<{name: string, id: number}[]> {
 	}
 	
 	// Throw error if less valid classes than expected were found (to prevent unwanted deletion)
-	if(validGroups.length < config.minValidGroupCount) {
+	if(validGroups.length < getConfig().minValidGroupCount) {
 		throw new Error(
 			`Only ${validGroups.length} valid groups were found. ` +
-			`If this is correct, increase 'minValidGroupCount' in the config file.`
+			`If this is correct, increase 'minValidGroupCount' in the getConfig() file.`
 		);
 	}
 	return validGroups;
@@ -147,12 +136,12 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 	// Get the id of the teacher group
 	const teacherGroupID = await (async () => {
 		const groups = await jac.getAllGroups();
-		const pos = groups.map(g => g.name).indexOf(config.teacherGroupName);
+		const pos = groups.map(g => g.name).indexOf(getConfig().teacherGroupName);
 		if(pos < 0) {
-			console.log(toRed('WARNING: ') + `Teacher group '${config.teacherGroupName}' not found!`);
+			console.log(toRed('WARNING: ') + `Teacher group '${getConfig().teacherGroupName}' not found!`);
 			logFile.appendToBuffer(
-				`\nWarning: Teacher group '${config.teacherGroupName}' not found!\n`);
-			return config.teacherGroupID;
+				`\nWarning: Teacher group '${getConfig().teacherGroupName}' not found!\n`);
+			return getConfig().teacherGroupID;
 		}
 		return groups[pos].id;
 	})()
@@ -247,8 +236,8 @@ async function correctClass(clsGroupPair: GroupClassPairObject, teacherGroupID: 
 	if(nChangedStudents + nChangedTeachers <= 0) return 0;
 	
 	// If the teacher changed or many of the students, delete the class and create a new one
-	let isNewClass = nChangedStudents > config.changedStudentsLimit;
-	isNewClass ||= nChangedTeachers > config.changedTeachersLimit;
+	let isNewClass = nChangedStudents > getConfig().changedStudentsLimit;
+	isNewClass ||= nChangedTeachers > getConfig().changedTeachersLimit;
 	
 	if(isNewClass) {
 		logFile.appendToBuffer(`Rebuilding class ${cls.name}`);
@@ -403,7 +392,7 @@ async function verifyChanges(): Promise<number> {
 
 
 export { 
-	toRed, toGreen, toYellow, toBlue, toMagenta, toCyan, config, GroupClassPairObject,
+	toRed, toGreen, toYellow, toBlue, toMagenta, toCyan, GroupClassPairObject,
 	combineGroupsAndClasses, getValidGroups, createClassFromGroupMembers, checkClassGroups,
 	correctClass, verifyChanges,
 }
