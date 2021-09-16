@@ -1,7 +1,8 @@
 #!/bin/bash
 # correct-jamf-classes - A simple script to start the correction script using node.
 # Supports setting certain options/parameters to start the JS-Script with
-# The JS-Script reads all the groups and classes from a Jamf School Server, deleting classes without groups,
+
+# The JS-Script reads all the groups and classes from a Jamf School Server, deleting classes without groups, 
 # creating new classes for groups without a class and editing all classes to match their corresponding groups
 # in terms of students and teachers.
 #
@@ -118,7 +119,7 @@ do {
 			reset_classes=true;
 			node_js_args+="\"resetClasses\":true,";;
 		-t|--temporary)
-			config_change_tem	porary=true;;
+			config_change_temporary=true;;
 		-a|--authorization)
 			authcode="$2"; shift;
 			if [[ ! "$authcode" =~ ^[0-9]+\:[0-9a-zA-Z]+$ ]] #regex magic, checks if authcode format is valid
@@ -151,6 +152,7 @@ do {
 		--enable-logging)
 			enable_logging="$2"; shift;
 			if [[ ! "$enable_logging" =~ ^(true)|(false)$ ]]
+
 			then echo "enable-logging must be set to 'true' or to 'false'!" >&2; exit 1;
 			else node_js_args+="\"lfg_enableLogFile\":$enable_logging,";
 			fi;;
