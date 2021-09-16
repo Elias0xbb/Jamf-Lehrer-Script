@@ -8,12 +8,12 @@
 # For all argument usage see below
 
 node_script_path="./src/start.js"
-documentation_path="$(readlink -m ../documentation.pdf)"
+documentation_path="./documentation.pdf"
 config_change_temporary=false
 reset_classes=false
 
 get_config_parameter_value() {
-	#cd "$(dirname "$(readlink -m "$node_script_path")")" #yeeah we could just do -e or -f and get rid of the extra validation check but bruh, this way we will not get weird error messages from readlink
+	#cd "$(dirname "$node_script_path")" #yeeah we could just do -e or -f and get rid of the extra validation check but bruh, this way we will not get weird error messages
 	value="$(grep "$1" ../config/scriptConfig.json)"
 	value="${value#*:*}" 	#remove the '"parameter":' part
 	value="${value#' '}"	#remove any whitespace in front
@@ -24,7 +24,7 @@ get_config_parameter_value() {
 }
 
 get_current_config_values() {
-	cd "$(dirname "$(readlink -m "$node_script_path")")"
+	cd "$(dirname "$node_script_path")"
 	if [ ! -s "../config/scriptConfig.json" ]
 	then echo "Couldn't find config-file! Please make sure config-file exists!" >&2; return 1;
 	else {
@@ -128,7 +128,7 @@ do {
 			else node_js_args+="\"authcode\":\"$authcode\",";
 			fi;;
 		-l|--logfile)
-			logfile_path="$(readlink -m "$2")"; shift; # get the absolute path in case the specified path is relative
+			logfile_path="$2"; shift; # get the absolute path in case the specified path is relative
 			node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; # seperate dir- and filename
 			node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
 			node_js_args+="\"lfg_enableLogFile\":true,";; # enable the logfile
