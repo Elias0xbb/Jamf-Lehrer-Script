@@ -8,12 +8,12 @@
 # For all argument usage see below
 
 node_script_path="./src/start.js"
-documentation_path="$(realpath ../documentation.pdf)" #realpath gives the absolute path: https://stackoverflow.com/questions/3915040/how-to-obtain-the-absolute-path-of-a-file-via-shell-bash-zsh-sh
+documentation_path="$(readlink -m ../documentation.pdf)"
 config_change_temporary=false
 reset_classes=false
 
 get_config_parameter_value() {
-	#cd "$(dirname "$(realpath "$node_script_path")")"
+	#cd "$(dirname "$(readlink -m "$node_script_path")")" #yeeah we could just do -e or -f and get rid of the extra validation check but bruh, this way we will not get weird error messages from readlink
 	value="$(grep "$1" ../config/scriptConfig.json)"
 	value="${value#*:*}" 	#remove the '"parameter":' part
 	value="${value#' '}"	#remove any whitespace in front
@@ -24,7 +24,7 @@ get_config_parameter_value() {
 }
 
 get_current_config_values() {
-	cd "$(dirname "$(realpath "$node_script_path")")"
+	cd "$(dirname "$(readlink -m "$node_script_path")")"
 	if [ ! -s "../config/scriptConfig.json" ]
 	then echo "Couldn't find config-file! Please make sure config-file exists!" >&2; return 1;
 	else {
@@ -117,10 +117,10 @@ do {
 			reset_classes=true;
 			node_js_args+="\"resetClasses\":true,";;
 		-t|--temporary)
-			config_change_temporary=true;;
+			config_change_tem	porary=true;;
 		-a|--authorization)
 			authcode="$2"; shift;
-			if [[ ! "$authcode" = +(0|1|2|3|4|5|6|7|8|9):* ]] #'+(list)' checks for one or more occurances of the specified list of patterns
+			if [[ ! "$authcode" =~ ^[0-9]+\:[0-9a-zA-Z]+$ ]] #regex magic, checks if authcode format is valid
 			then {
 				echo "Invalid authorization \"$authcode\". Please make sure username and password are valid and seperated by ':'." >&2;
 				exit 1;
@@ -128,13 +128,13 @@ do {
 			else node_js_args+="\"authcode\":\"$authcode\",";
 			fi;;
 		-l|--logfile)
-			logfile_path="$(realpath "$2")"; shift; # get the absolute path in case the specified path is relative
+			logfile_path="$(readlink -m "$2")"; shift; # get the absolute path in case the specified path is relative
 			node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; # seperate dir- and filename
 			node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
 			node_js_args+="\"lfg_enableLogFile\":true,";; # enable the logfile
 		--enable-logging)
 			enable_logging="$2"; shift;
-			if [[ "$enable_logging" != @("true"|"false") ]]
+			if [[ ! "$enable_logging" =~ ^(true)|(false)$ ]]
 			then echo "enable-logging must be set to 'true' or to 'false'!" >&2; exit 1;
 			else node_js_args+="\"lfg_enableLogFile\":$enable_logging,";
 			fi;;
@@ -191,7 +191,7 @@ do {
 			fi;;
 		--enable-colored-output)
 			enable_colored_output="$2"; shift;
-			if [[ "$enable_colored_output" != @("true"|"false") ]]
+			if [[ ! "$enable_colored_output" =~ ^(true)|(false)$ ]]
 			then echo "enable-colored-output must be set to 'true' or to 'false'!" >&2; exit 1;
 			else node_js_args+="\"coloredConsoleOutputs\":$enable_colored_output,";
 			fi;;
