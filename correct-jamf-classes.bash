@@ -1,7 +1,7 @@
 #!/bin/bash
 # correct-jamf-classes - A simple script to start the correction script using node.
 # Supports setting certain options/parameters to start the JS-Script with
-# The JS-Script reads all the groups and classes from a Jamf School Server, deleting classes without groups, 
+# The JS-Script reads all the groups and classes from a Jamf School Server, deleting classes without groups,
 # creating new classes for groups without a class and editing all classes to match their corresponding groups
 # in terms of students and teachers.
 #
@@ -11,6 +11,7 @@ node_script_path="./src/start.js"
 documentation_path="./documentation.pdf"
 config_change_temporary=false
 reset_classes=false
+start_script=false
 
 get_config_parameter_value() {
 	#cd "$(dirname "$node_script_path")" #yeeah we could just do -e or -f and get rid of the extra validation check but bruh, this way we will not get weird error messages
@@ -112,7 +113,7 @@ do {
 		-h|--help)
 			display_help_page; exit 0;;
 		-s)
-			node_js_args+="\"start\":true,";;
+			start_script=true; node_js_args+="\"start\":true,";;
 		-r|--reset-classes)
 			reset_classes=true;
 			node_js_args+="\"resetClasses\":true,";;
@@ -128,10 +129,25 @@ do {
 			else node_js_args+="\"authcode\":\"$authcode\",";
 			fi;;
 		-l|--logfile)
-			logfile_path="$2"; shift; # get the absolute path in case the specified path is relative
-			node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; # seperate dir- and filename
-			node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
-			node_js_args+="\"lfg_enableLogFile\":true,";; # enable the logfile
+			logfile_path="$2"; shift;
+			if [ -f "$logfile_path" ]
+			then {
+				node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; # seperate dir- and filename
+				node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
+				node_js_args+="\"lfg_enableLogFile\":true,";
+			}
+			elif [ -d "$logfile_path" ]
+			then  {
+				node_js_args+="\"lfg_dirPath\":\"$logfile_path\","; # DO NOT try to seperate dir- and filename
+				node_js_args+="\"lfg_logFileName\":\"\","; # overwrite current logFileName with empty name
+				node_js_args+="\"lfg_enableLogFile\":true,";
+			}
+			else {
+				echo -e "\x1b[33m'$logfile_path' does not point to an existing file or directory! Please check spelling!\x1b[0m" >&2; #exit 1;
+				node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; # seperate dir- and filename
+				node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
+				node_js_args+="\"lfg_enableLogFile\":true,";
+			} fi;;
 		--enable-logging)
 			enable_logging="$2"; shift;
 			if [[ ! "$enable_logging" =~ ^(true)|(false)$ ]]
@@ -163,10 +179,19 @@ do {
 			class_description="$2"; shift;
 			if [ -z "$class_description" ] #see --tg-name above
 			then echo "class description must not be empty!" >&2; exit 1;
-			else node_js_args+="\"createdClassDescription\":\"$class_description\",";
-			fi;
-			if [ ! $reset_classes ]
+			else {
+				echo -e "\x1b[31mChanging the class description will force start the program.\x1b[0m"
+				read -p "Do you wish to proceed? [y/n] " -r
+				if [[ ! $REPLY =~ ^(Y)|(y)|(Yes)|(yes)$ ]]
+				then [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1
+				fi
+				node_js_args+="\"createdClassDescription\":\"$class_description\",";
+			} fi;
+			if [ "$reset_classes" = "false" ]
 			then reset_classes=true; node_js_args+="\"resetClasses\":true,";
+			fi;
+			if [ "$start_script" = "false" ]
+			then start_script=true; node_js_args+="\"start\":true,";
 			fi;;
 		--min-valid-groups)
 			min_valid_groups="$2"; shift;
