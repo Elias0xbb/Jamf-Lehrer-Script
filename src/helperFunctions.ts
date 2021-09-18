@@ -54,7 +54,7 @@ function combineGroupsAndClasses(groups: {name: string, id: number}[], classes: 
 async function getValidGroups(): Promise<{name: string, id: number}[]> {
 	// Get getConfig() properties
 	const clsNameRegEx = new RegExp(getConfig().classUserGroupRegEx);
-	const altClsNameRegEx = new RegExp(getConfig().altUserGroupRegEx);
+	const iPadKNameRegEx = new RegExp(getConfig().iPadGroupRegEx);
 
 	const ignoredDescr = getConfig().createdClassDescription;
 	if(!ignoredDescr || ignoredDescr === '') throw new Error(
@@ -73,7 +73,7 @@ async function getValidGroups(): Promise<{name: string, id: number}[]> {
 	// equal to getConfig().createdClassDescription, the group will not be
 	// added to the validGroups array
 	allGroups.forEach(({name, id, description, userCount}) => {
-		if(description != ignoredDescr && (clsNameRegEx.test(name) || altClsNameRegEx.test(name))) {
+		if(description != ignoredDescr && (clsNameRegEx.test(name) || iPadKNameRegEx.test(name))) {
 			// Check if the group has any members
 			if(userCount > 0) {
 				validGroups.push({name: name, id: id});
@@ -145,6 +145,9 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 		}
 		return groups[pos].id;
 	})()
+	const teacherGroup = await jac.getMembersOf(`${teacherGroupID}`);
+
+	const iPadGrpRegEx = new RegExp(getConfig().iPadGroupRegEx);
 
 	// Loop over the group-class pair array
 	let classCreations: Promise<string>[] = [];
@@ -156,6 +159,17 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 			// Get all group members and create the class
 			// TODO: Improve performance
 			let group = await jac.getMembersOf(`${e.groupID}`);
+			// If the group is an iPad group, sync the teachers
+			if(iPadGrpRegEx.test(e.name)) {
+				let missingTeachers = teacherGroup;
+				let incorrectTeachers: jac.DetailedUserObject[] = [];
+
+				group.forEach(mem => {
+					// Ignore 
+					if(mem.groupIds.indexOf(teacherGroupID) < 0) continue;
+					if(teacherGroup.)
+				})
+			}
 			classCreations.push(createClassFromGroupMembers(e.name, group, teacherGroupID));
 			
 			logFile.appendToBuffer(`Creating new class '${e.name}'.`);
