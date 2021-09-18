@@ -1,6 +1,7 @@
 #!/bin/bash
 # correct-jamf-classes - A simple script to start the correction script using node.
 # Supports setting certain options/parameters to start the JS-Script with
+
 # The JS-Script reads all the groups and classes from a Jamf School Server, deleting classes without groups, 
 # creating new classes for groups without a class and editing all classes to match their corresponding groups
 # in terms of students and teachers.
@@ -8,12 +9,13 @@
 # For all argument usage see below
 
 node_script_path="./src/start.js"
-documentation_path="$(realpath ../documentation.pdf)" #realpath gives the absolute path: https://stackoverflow.com/questions/3915040/how-to-obtain-the-absolute-path-of-a-file-via-shell-bash-zsh-sh
+documentation_path="./documentation.pdf"
 config_change_temporary=false
 reset_classes=false
+start_script=false
 
 get_config_parameter_value() {
-	#cd "$(dirname "$(realpath "$node_script_path")")"
+	#cd "$(dirname "$node_script_path")" #yeeah we could just do -e or -f and get rid of the extra validation check but bruh, this way we will not get weird error messages
 	value="$(grep "$1" ../config/scriptConfig.json)"
 	value="${value#*:*}" 	#remove the '"parameter":' part
 	value="${value#' '}"	#remove any whitespace in front
@@ -24,7 +26,7 @@ get_config_parameter_value() {
 }
 
 get_current_config_values() {
-	cd "$(dirname "$(realpath "$node_script_path")")"
+	cd "$(dirname "$node_script_path")"
 	if [ ! -s "../config/scriptConfig.json" ]
 	then echo "Couldn't find config-file! Please make sure config-file exists!" >&2; return 1;
 	else {
@@ -112,7 +114,7 @@ do {
 		-h|--help)
 			display_help_page; exit 0;;
 		-s)
-			node_js_args+="\"start\":true,";;
+			start_script=true; node_js_args+="\"start\":true,";;
 		-r|--reset-classes)
 			reset_classes=true;
 			node_js_args+="\"resetClasses\":true,";;
@@ -120,7 +122,7 @@ do {
 			config_change_temporary=true;;
 		-a|--authorization)
 			authcode="$2"; shift;
-			if [[ ! "$authcode" = +(0|1|2|3|4|5|6|7|8|9):* ]] #'+(list)' checks for one or more occurances of the specified list of patterns
+			if [[ ! "$authcode" =~ ^[0-9]+\:[0-9a-zA-Z]+$ ]] #regex magic, checks if authcode format is valid
 			then {
 				echo "Invalid authorization \"$authcode\". Please make sure username and password are valid and seperated by ':'." >&2;
 				exit 1;
@@ -128,13 +130,29 @@ do {
 			else node_js_args+="\"authcode\":\"$authcode\",";
 			fi;;
 		-l|--logfile)
-			logfile_path="$(realpath "$2")"; shift; # get the absolute path in case the specified path is relative
-			node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; # seperate dir- and filename
-			node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
-			node_js_args+="\"lfg_enableLogFile\":true,";; # enable the logfile
+			logfile_path="$2"; shift;
+			if [ -f "$logfile_path" ]
+			then {
+				node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; # seperate dir- and filename
+				node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
+				node_js_args+="\"lfg_enableLogFile\":true,";
+			}
+			elif [ -d "$logfile_path" ]
+			then  {
+				node_js_args+="\"lfg_dirPath\":\"$logfile_path\","; # DO NOT try to seperate dir- and filename
+				node_js_args+="\"lfg_logFileName\":\"\","; # overwrite current logFileName with empty name
+				node_js_args+="\"lfg_enableLogFile\":true,";
+			}
+			else {
+				echo -e "\x1b[33m'$logfile_path' does not point to an existing file or directory! Please check spelling!\x1b[0m" >&2; #exit 1;
+				node_js_args+="\"lfg_dirPath\":\"$(dirname "$logfile_path")\","; # seperate dir- and filename
+				node_js_args+="\"lfg_logFileName\":\"$(basename "$logfile_path")\",";
+				node_js_args+="\"lfg_enableLogFile\":true,";
+			} fi;;
 		--enable-logging)
 			enable_logging="$2"; shift;
-			if [[ "$enable_logging" != @("true"|"false") ]]
+			if [[ ! "$enable_logging" =~ ^(true)|(false)$ ]]
+
 			then echo "enable-logging must be set to 'true' or to 'false'!" >&2; exit 1;
 			else node_js_args+="\"lfg_enableLogFile\":$enable_logging,";
 			fi;;
@@ -163,10 +181,19 @@ do {
 			class_description="$2"; shift;
 			if [ -z "$class_description" ] #see --tg-name above
 			then echo "class description must not be empty!" >&2; exit 1;
-			else node_js_args+="\"createdClassDescription\":\"$class_description\",";
-			fi;
-			if [ ! $reset_classes ]
+			else {
+				echo -e "\x1b[31mChanging the class description will force start the program.\x1b[0m"
+				read -p "Do you wish to proceed? [y/n] " -r
+				if [[ ! $REPLY =~ ^(Y)|(y)|(Yes)|(yes)$ ]]
+				then [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1
+				fi
+				node_js_args+="\"createdClassDescription\":\"$class_description\",";
+			} fi;
+			if [ "$reset_classes" = "false" ]
 			then reset_classes=true; node_js_args+="\"resetClasses\":true,";
+			fi;
+			if [ "$start_script" = "false" ]
+			then start_script=true; node_js_args+="\"start\":true,";
 			fi;;
 		--min-valid-groups)
 			min_valid_groups="$2"; shift;
@@ -191,7 +218,7 @@ do {
 			fi;;
 		--enable-colored-output)
 			enable_colored_output="$2"; shift;
-			if [[ "$enable_colored_output" != @("true"|"false") ]]
+			if [[ ! "$enable_colored_output" =~ ^(true)|(false)$ ]]
 			then echo "enable-colored-output must be set to 'true' or to 'false'!" >&2; exit 1;
 			else node_js_args+="\"coloredConsoleOutputs\":$enable_colored_output,";
 			fi;;
