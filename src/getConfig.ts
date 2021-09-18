@@ -4,7 +4,8 @@ import * as fs from 'fs';
 interface ConfigObject {
 	createdClassDescription: string,
 	classUserGroupRegEx: string,
-	altUserGroupRegEx: string,
+	iPadGroupRegEx: string,
+	iPadAccountRegex: string,
 	authorization: string,
 	minValidGroupCount: number,
 	teacherGroupName: string,

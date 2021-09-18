@@ -54,7 +54,7 @@ function combineGroupsAndClasses(groups: {name: string, id: number}[], classes: 
 async function getValidGroups(): Promise<{name: string, id: number}[]> {
 	// Get getConfig() properties
 	const clsNameRegEx = new RegExp(getConfig().classUserGroupRegEx);
-	const altClsNameRegEx = new RegExp(getConfig().altUserGroupRegEx);
+	const iPadKNameRegEx = new RegExp(getConfig().iPadGroupRegEx);
 
 	const ignoredDescr = getConfig().createdClassDescription;
 	if(!ignoredDescr || ignoredDescr === '') throw new Error(
@@ -73,7 +73,7 @@ async function getValidGroups(): Promise<{name: string, id: number}[]> {
 	// equal to getConfig().createdClassDescription, the group will not be
 	// added to the validGroups array
 	allGroups.forEach(({name, id, description, userCount}) => {
-		if(description != ignoredDescr && (clsNameRegEx.test(name) || altClsNameRegEx.test(name))) {
+		if(description != ignoredDescr && (clsNameRegEx.test(name) || iPadKNameRegEx.test(name))) {
 			// Check if the group has any members
 			if(userCount > 0) {
 				validGroups.push({name: name, id: id});
@@ -145,6 +145,41 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 		}
 		return groups[pos].id;
 	})()
+
+	// Updating iPad Koffer groups:
+	const iPadGrpRegex = new RegExp(getConfig().iPadGroupRegEx);
+	let iPadGroups: {id: string, members: jac.DetailedUserObject[]}[] = [];
+	grpClsArray.forEach(gp => {
+		if(iPadGrpRegex.test(gp.name)) iPadGroups.push({id: gp.groupID.toString(), members: null})
+	});
+	
+	// Get Teacher group:
+	const teachers = await jac.getMembersOf(teacherGroupID.toString());
+	
+	// TODO: improve performance ( not really necessary as long as there are only few iPad K. Groups )
+	for(const grp of iPadGroups) {
+		grp.members = await jac.getMembersOf(grp.id);
+
+		// Correct the group
+		let missingTeachers: string[] = [], incorrectTeachers: string[] = [];
+		// Regex to find iPad Accounts
+		const iPadAccountRegex = new RegExp(getConfig().iPadAccountRegex);
+
+		grp.members.forEach(mem => {
+			// Delete all members who are neither teachers nor iPads
+			if(teachers.map(t => t.id).indexOf(mem.id) < 0) {
+				if(!iPadAccountRegex.test(mem.name)) incorrectTeachers.push(mem.id.toString());
+			}
+		});
+
+		// Find all missing teachers
+		teachers.forEach(t => {
+			if(grp.members.map(mem => mem.id).indexOf(t.id) < 0) missingTeachers.push(t.id.toString());
+		});
+
+		// Update group
+		// TODO: Add function to manipulate group
+	}
 
 	// Loop over the group-class pair array
 	let classCreations: Promise<string>[] = [];
