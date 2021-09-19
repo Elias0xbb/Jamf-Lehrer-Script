@@ -362,6 +362,10 @@ async function verifyChanges(): Promise<number> {
 	// Get all classes and groups
 	const classes = await jac.getAllClasses();
 	const groups = await getValidGroups();
+	const teacherGroupPos = groups.map(g => g.name).indexOf(getConfig().teacherGroupName);
+	let teacherGroupID: number = null;
+	if(teacherGroupPos < 0) teacherGroupID = getConfig().teacherGroupID;
+	teacherGroupID = groups[teacherGroupPos].id;
 	
 	// Create class-group pairs
 	const clsGrpPairs = await (async () => {
@@ -399,6 +403,8 @@ async function verifyChanges(): Promise<number> {
 			nErrors++;
 			continue
 		}
+		// Sync with teacher group if the group is an iPad Koffer group
+		await syncIfIPadGroup(clsGrpPair.name, clsGrpPair.grpMembers, teacherGroupID);
 		// Compare group- to class members
 		const grpMembers = clsGrpPair.grpMembers;
 		let clsMembers = [...clsGrpPair.cls.students, ...clsGrpPair.cls.teachers];
