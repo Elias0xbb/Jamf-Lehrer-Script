@@ -137,7 +137,9 @@ async function syncIfIPadGroup( groupName: string,
 
 	// find missing and incorrect teachers
 	const ignoredUserRegex = new RegExp(getConfig().iPadAccountRegex);
-	const teachers = await jac.getMembersOf(teacherGroupID.toString())
+	const teachers = await jac.getMembersOf(teacherGroupID.toString());
+	
+	if((teachers ?? []).length === 0) return null;
 
 	for(let i = 0; i < groupMembers.length; i++) {
 		// Ignore iPad Accounts
@@ -362,10 +364,12 @@ async function verifyChanges(): Promise<number> {
 	// Get all classes and groups
 	const classes = await jac.getAllClasses();
 	const groups = await getValidGroups();
-	const teacherGroupPos = groups.map(g => g.name).indexOf(getConfig().teacherGroupName);
-	let teacherGroupID: number = null;
+	const allGroups = await jac.getAllGroups();
+	// Get teacher group id
+	const teacherGroupPos = allGroups.map(g => g.name).indexOf(getConfig().teacherGroupName);
+	let teacherGroupID = 0;
 	if(teacherGroupPos < 0) teacherGroupID = getConfig().teacherGroupID;
-	teacherGroupID = groups[teacherGroupPos].id;
+	else teacherGroupID = allGroups[teacherGroupPos].id;
 	
 	// Create class-group pairs
 	const clsGrpPairs = await (async () => {
@@ -404,7 +408,9 @@ async function verifyChanges(): Promise<number> {
 			continue
 		}
 		// Sync with teacher group if the group is an iPad Koffer group
-		await syncIfIPadGroup(clsGrpPair.name, clsGrpPair.grpMembers, teacherGroupID);
+		const isIPadGrp = await syncIfIPadGroup(clsGrpPair.name, clsGrpPair.grpMembers, teacherGroupID);
+//		console.log(`${clsGrpPair.name} isIPadGrp: ${isIPadGrp}`);
+
 		// Compare group- to class members
 		const grpMembers = clsGrpPair.grpMembers;
 		let clsMembers = [...clsGrpPair.cls.students, ...clsGrpPair.cls.teachers];
