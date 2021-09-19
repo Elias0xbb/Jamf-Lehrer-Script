@@ -123,6 +123,41 @@ async function createClassFromGroupMembers(clsName: string,
 	return res;
 }
 
+/*-< syncIfIPadGroup( groupName, groupID ) >---+
+| Tests if the group is an iPad Koffer group.  |
+| Adds / removes missing / incorrect teachers. |
+| Returns true if the group is an iPad grp.    |
++---------------------------------------------*/
+async function syncIfIPadGroup( groupName: string,
+								groupMembers: jac.DetailedUserObject[],
+								teacherGroupID: number ) {
+	const iPadGrpRegex = new RegExp(getConfig().iPadGroupRegEx);
+	// Return original members if the group isn't an iPad K. group
+	if(!iPadGrpRegex.test(groupName)) return false;
+
+	// find missing and incorrect teachers
+	const ignoredUserRegex = new RegExp(getConfig().iPadAccountRegex);
+	const teachers = await jac.getMembersOf(teacherGroupID.toString())
+
+	for(let i = 0; i < groupMembers.length; i++) {
+		// Ignore iPad Accounts
+		if(ignoredUserRegex.test(groupMembers[i].name)) continue;
+		// Test if user is incorrect and remove user if so
+		if(teachers.map(t => t.id).indexOf(groupMembers[i].id) < 0) {
+			groupMembers.splice(i, 1);
+			--i;
+		}
+	}
+	
+	// Add missing teachers
+	teachers.forEach(t => {
+		if(groupMembers.map(m => m.id).indexOf(t.id) < 0) groupMembers.push(t);
+	});
+
+	return true;
+}
+
+
 /*-< checkClassGroups(grpClsArray) >---------------------------------------------------+
 | Checks if a corresponding class exists for every group and if the class has the same |
 | members as the group. Creates all missing classes and adds / removes class members   |
@@ -146,41 +181,6 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 		return groups[pos].id;
 	})()
 
-	// Updating iPad Koffer groups:
-	const iPadGrpRegex = new RegExp(getConfig().iPadGroupRegEx);
-	let iPadGroups: {id: string, members: jac.DetailedUserObject[]}[] = [];
-	grpClsArray.forEach(gp => {
-		if(iPadGrpRegex.test(gp.name)) iPadGroups.push({id: gp.groupID.toString(), members: null})
-	});
-	
-	// Get Teacher group:
-	const teachers = await jac.getMembersOf(teacherGroupID.toString());
-	
-	// TODO: improve performance ( not really necessary as long as there are only few iPad K. Groups )
-	for(const grp of iPadGroups) {
-		grp.members = await jac.getMembersOf(grp.id);
-
-		// Correct the group
-		let missingTeachers: string[] = [], incorrectTeachers: string[] = [];
-		// Regex to find iPad Accounts
-		const iPadAccountRegex = new RegExp(getConfig().iPadAccountRegex);
-
-		grp.members.forEach(mem => {
-			// Delete all members who are neither teachers nor iPads
-			if(teachers.map(t => t.id).indexOf(mem.id) < 0) {
-				if(!iPadAccountRegex.test(mem.name)) incorrectTeachers.push(mem.id.toString());
-			}
-		});
-
-		// Find all missing teachers
-		teachers.forEach(t => {
-			if(grp.members.map(mem => mem.id).indexOf(t.id) < 0) missingTeachers.push(t.id.toString());
-		});
-
-		// Update group
-		// TODO: Add function to manipulate group
-	}
-
 	// Loop over the group-class pair array
 	let classCreations: Promise<string>[] = [];
 	let classCorrections: Promise<number>[] = [];
@@ -191,6 +191,9 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 			// Get all group members and create the class
 			// TODO: Improve performance
 			let group = await jac.getMembersOf(`${e.groupID}`);
+			// Add / remove teachers if e is an iPad Koffer group
+			await syncIfIPadGroup(e.name, group, teacherGroupID);
+			
 			classCreations.push(createClassFromGroupMembers(e.name, group, teacherGroupID));
 			
 			logFile.appendToBuffer(`Creating new class '${e.name}'.`);
@@ -230,7 +233,10 @@ async function checkClassGroups(grpClsArray: GroupClassPairObject[]) {
 async function correctClass(clsGroupPair: GroupClassPairObject, teacherGroupID: number) {
 	// Get detailed information on the class and the group
 	const cls = await jac.getClass(clsGroupPair.classUUID);
-	const grpUsers = await jac.getMembersOf(`${clsGroupPair.groupID}`);
+	let grpUsers = await jac.getMembersOf(`${clsGroupPair.groupID}`);
+	let isIPadGroup = await syncIfIPadGroup(clsGroupPair.name, grpUsers, teacherGroupID)
+	// TODO: Turn this into a list:
+	logFile.appendToBuffer(`iPad Group found: ${clsGroupPair.name}`, isIPadGroup);
 
 	// Find all the teachers and students that are members of the group but cannot be found in the class.
 	// The missing users are then stored in 'clsMissing' so that they can be added to the class.
