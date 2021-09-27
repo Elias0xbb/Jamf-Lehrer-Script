@@ -1,22 +1,21 @@
 {
-	"createdClassDescription": "__IGNORE__",
-	"classUserGroupRegEx": "^(k|q|j|(ib)|(gt))\\d{1,2}\\w*\\d*.\\w+\\d*\\s*$",
-	"iPadGroupRegEx": "^iPad Koffer",
-	"iPadAccountRegex": "^iPad",
-	"authorization": "",
-	"minValidGroupCount": 250,
-	"teacherGroupName": "lehrer",
-	"teacherGroupID": 11818,
-	"changedStudentsLimit": 8,
-	"changedTeachersLimit": 1,
-	"coloredConsoleOutputs": true,
-	"progressBarWidth": 32,
-	"progressBarOffset": "",
-
-	"logFileConfig": {
-		"enableLogFile": true,
-		"dirPath": "../logFiles",
-		"logFileName": "log.txt",
-		"autoClear": true
-	}
+    "createdClassDescription": "__IGNORE__",
+    "classUserGroupRegEx": "^(k|q|j|(ib)|(gt))\\d{1,2}\\w*\\d*.\\w+\\d*\\s*$",
+    "iPadGroupRegEx": "^iPad(-|\\s)?Koffer\\s?\\(\\d+\\)$",
+    "iPadAccountRegex": "^iPad(\\s|-)?\\d+$",
+    "authorization": "",
+    "minValidGroupCount": 5,
+    "teacherGroupName": "lehrer",
+    "teacherGroupID": null,
+    "changedStudentsLimit": 8,
+    "changedTeachersLimit": 1,
+    "coloredConsoleOutputs": true,
+    "progressBarWidth": 32,
+    "progressBarOffset": "",
+    "logFileConfig": {
+        "enableLogFile": true,
+        "dirPath": "../logFiles",
+        "logFileName": "log.txt",
+        "autoClear": true
+    }
 }
