@@ -236,9 +236,7 @@ async function correctClass(clsGroupPair: GroupClassPairObject, teacherGroupID: 
 	// Get detailed information on the class and the group
 	const cls = await jac.getClass(clsGroupPair.classUUID);
 	let grpUsers = await jac.getMembersOf(`${clsGroupPair.groupID}`);
-	let isIPadGroup = await syncIfIPadGroup(clsGroupPair.name, grpUsers, teacherGroupID)
-	// TODO: Turn this into a list:
-	logFile.appendToBuffer(`iPad Group found: ${clsGroupPair.name}`, isIPadGroup);
+	await syncIfIPadGroup(clsGroupPair.name, grpUsers, teacherGroupID)
 
 	// Find all the teachers and students that are members of the group but cannot be found in the class.
 	// The missing users are then stored in 'clsMissing' so that they can be added to the class.

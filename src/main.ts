@@ -32,7 +32,7 @@ async function main(deleteClasses: boolean): Promise<number> {
 
 		// Delete all classes before execution (if enabled)
 		if(deleteClasses) {
-			console.log(hf.toMagenta('Deleting all classes'));
+			console.log(hf.toMagenta('\nDeleting all classes'));
 			let res = [];
 			// Send api request for every class (DELETE)
 			classes.forEach(c => res.push(jac.deleteClass(c.uuid)));
