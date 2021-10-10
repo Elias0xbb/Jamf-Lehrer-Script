@@ -163,6 +163,12 @@ async function testIfClassExists(name: string) {
 async function createClass(name: string, studentIDs: string[], teacherIDs: string[]): Promise<string> {
 	for(let i = 0; i < 5; ++i) {
 		try {
+			// If the request failed check if the class exists
+			if(i && await testIfClassExists(name)) {
+				logFile.appendToBuffer(`[jac.createClass] Warning: Tried to create existing class '${name}'`);
+				return null;
+			}
+
 			// Return Null and print a warning if the name is invalid
 			if(!name) {
 				logFile.appendToBuffer(`Failed to create new class {name missing} [Function: createClass].`);
